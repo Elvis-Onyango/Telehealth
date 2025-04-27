@@ -1,0 +1,389 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard</title>
+    <!-- CSS and JS Imports (unchanged to prevent conflicts) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body class="bg-gray-100 p-4 md:p-6">
+    <!-- Top Navigation (improved responsive layout) -->
+    <div class="flex flex-col md:flex-row justify-between items-center bg-white shadow-md p-4 rounded-lg gap-4">
+        <h2 class="text-xl md:text-2xl font-bold flex items-center">
+            <i data-lucide="stethoscope" class="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600"></i> Doctor Dashboard
+        </h2>
+        <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+            <!-- Search Bar -->
+            <div class="relative w-full md:w-64">
+                <input type="text" id="search-bar" placeholder="Search patients..." 
+                       class="w-full p-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <i data-lucide="search" class="absolute left-3 top-2.5 md:top-3 w-4 h-4 md:w-5 md:h-5 text-gray-400"></i>
+            </div>
+            <!-- Notification and Logout -->
+            <div class="flex items-center space-x-4">
+                <div id="notification-bell" class="relative cursor-pointer">
+                    <i data-lucide="bell" class="w-5 h-5 md:w-6 md:h-6 text-gray-600"></i>
+                    <span id="notification-count" class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1">0</span>
+                </div>
+                <button class="bg-blue-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg hover:bg-blue-700 transition duration-300 text-sm md:text-base">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-4 mt-6">
+        <!-- Sidebar (improved spacing and typography) -->
+        <div class="col-span-12 md:col-span-3 bg-white shadow-md rounded-lg p-4">
+            <div class="flex flex-col items-center">
+                <img id="profile-picture" src="{% static 'images/doctor.jpg' %}" 
+                     class="rounded-full w-20 h-20 md:w-24 md:h-24 object-cover border-4 border-blue-100" 
+                     alt="Profile Picture">
+                <h3 class="text-lg md:text-xl font-bold text-center mt-3">Dr <span id="doctor-name"></span></h3>
+                <p class="text-center text-gray-600 text-sm md:text-base" id="specialization"></p>
+                <p class="text-center text-gray-600 text-sm md:text-base flex items-center mt-1">
+                    <i data-lucide="hospital" class="w-4 h-4 mr-1"></i> <span id="hospital-name"></span>
+                </p>
+            </div>
+            
+            <div class="mt-4 space-y-1 text-center">
+                <p class="text-gray-600 text-sm md:text-base flex items-center justify-center">
+                    <i data-lucide="phone" class="w-4 h-4 mr-1"></i> <span id="phone"></span>
+                </p>
+                <p class="text-gray-600 text-sm md:text-base flex items-center justify-center">
+                    <i data-lucide="mail" class="w-4 h-4 mr-1"></i> <span id="email"></span>
+                </p>
+            </div>
+            
+            <!-- Sidebar Navigation (improved hover states) -->
+            <div class="mt-6 space-y-1">
+                <a href="#" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition duration-300 group">
+                    <i data-lucide="home" class="w-5 h-5 mr-2 text-blue-600"></i> 
+                    <span class="group-hover:text-blue-600">Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition duration-300 group">
+                    <i data-lucide="calendar" class="w-5 h-5 mr-2 text-blue-600"></i> 
+                    <span class="group-hover:text-blue-600">Appointments</span>
+                </a>
+                <a href="#" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition duration-300 group">
+                    <i data-lucide="users" class="w-5 h-5 mr-2 text-blue-600"></i> 
+                    <span class="group-hover:text-blue-600">Patients</span>
+                </a>
+                <a href="#" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition duration-300 group">
+                    <i data-lucide="settings" class="w-5 h-5 mr-2 text-blue-600"></i> 
+                    <span class="group-hover:text-blue-600">Settings</span>
+                </a>
+                <a href="#" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition duration-300 group" id="communication-btn">
+                    <i data-lucide="message-circle" class="w-5 h-5 mr-2 text-blue-600"></i> 
+                    <span class="group-hover:text-blue-600">Chat</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content (improved card designs) -->
+        <div class="col-span-12 md:col-span-9 space-y-6">
+            <!-- Statistics Cards (improved visual hierarchy) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500 hover:shadow-lg transition duration-300">
+                    <h3 class="text-base md:text-lg font-semibold text-gray-700">Total Patients</h3>
+                    <p class="text-xl md:text-2xl font-bold text-blue-600 mt-1" id="total-patients">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500 hover:shadow-lg transition duration-300">
+                    <h3 class="text-base md:text-lg font-semibold text-gray-700">Consultation Fee</h3>
+                    <p class="text-xl md:text-2xl font-bold text-green-600 mt-1">Ksh <span id="consultation-fee"></span></p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-purple-500 hover:shadow-lg transition duration-300">
+                    <h3 class="text-base md:text-lg font-semibold text-gray-700">Appointments Today</h3>
+                    <p class="text-xl md:text-2xl font-bold text-purple-600 mt-1" id="appointments-today">0</p>
+                </div>
+            </div>
+<!-- Messaging Section -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+  <h2 class="text-2xl font-bold text-gray-800 mb-6">Messages</h2>
+  
+  <div class="flex flex-col md:flex-row gap-6 h-[550px]">
+    <!-- Conversation List -->
+    <div class="w-full md:w-1/3 border-r border-gray-100 overflow-y-auto bg-gray-50 rounded-lg">
+      <div class="flex justify-between items-center mb-4 p-4 bg-white rounded-t-lg">
+        <h3 class="font-semibold text-gray-700">Conversations</h3>
+        <button id="new-message-btn" class="text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors">
+          <i class="fas fa-plus text-sm"></i>
+          <span class="text-sm font-medium">New Chat</span>
+        </button>
+      </div>
+      <div id="conversation-list" class="p-2 space-y-1">
+        <!-- Conversations will be loaded here dynamically -->
+        <div class="text-center py-16 text-gray-400">
+          <i class="fas fa-comments text-4xl mb-3 opacity-50"></i>
+          <p class="text-sm">Loading conversations...</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Message Area -->
+    <div class="w-full md:w-2/3 flex flex-col border border-gray-100 rounded-xl bg-white overflow-hidden">
+      <div id="message-header" class="border-b border-gray-100 p-4 hidden bg-white">
+        <div class="flex items-center gap-3">
+          <img id="conversation-avatar" src="https://via.placeholder.com/40" 
+               class="w-10 h-10 rounded-full object-cover border border-gray-200">
+          <div>
+            <h4 id="conversation-name" class="font-semibold text-gray-800">Select a conversation</h4>
+            <p id="conversation-role" class="text-xs text-gray-500"></p>
+          </div>
+        </div>
+      </div>
+      
+      <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/50">
+        <div class="text-center py-16 text-gray-400">
+          <i class="fas fa-comment-dots text-4xl mb-3 opacity-50"></i>
+          <p class="text-sm">Select a conversation to start messaging</p>
+        </div>
+      </div>
+      
+      <div id="message-input-container" class="border-t border-gray-100 p-4 hidden bg-white">
+        <div id="file-preview" class="mb-3"></div>
+        <div class="flex gap-3">
+          <textarea 
+            id="message-text" 
+            rows="2"
+            class="flex-1 border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-700 placeholder-gray-400 resize-none"
+            placeholder="Type your message..."
+          ></textarea>
+          <div class="flex flex-col gap-2">
+            <button id="send-btn" class="bg-blue-500 hover:bg-blue-600 text-white rounded-xl px-4 h-full flex items-center justify-center transition-colors">
+              <i class="fas fa-paper-plane text-sm"></i>
+            </button>
+            <div class="flex gap-2 justify-center">
+              <button id="attach-file-btn" class="text-gray-500 hover:text-blue-500 p-1.5 transition-colors">
+                <i class="fas fa-file text-sm"></i>
+              </button>
+              <button id="attach-video-btn" class="text-gray-500 hover:text-blue-500 p-1.5 transition-colors">
+                <i class="fas fa-video text-sm"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="file-input" class="hidden" accept="image/*,.pdf,.doc,.docx,.txt">
+        <input type="file" id="video-input" class="hidden" accept="video/*">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Loading indicator template (hidden by default) -->
+<template id="loading-template">
+  <div class="text-center py-16">
+    <i class="fas fa-spinner fa-spin text-3xl mb-2 text-blue-500"></i>
+    <p class="text-gray-600">Loading...</p>
+  </div>
+</template>
+
+<!-- Error message template (hidden by default) -->
+<template id="error-template">
+  <div class="text-center py-16 text-red-500">
+    <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
+    <p class="error-message">Error loading content</p>
+  </div>
+</template>
+            <!-- Video Conference Section -->
+            <div class="w-full">
+                {% include 'videoconferencing/create_meeting.html' %}
+            </div>
+
+            <!-- Charts Section (improved spacing) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition duration-300">
+                    <h3 class="text-lg font-semibold mb-3">Patients by Gender</h3>
+                    <canvas id="patientsChart" height="250"></canvas>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition duration-300">
+                    <h3 class="text-lg font-semibold mb-3">Age Distribution</h3>
+                    <canvas id="ageChart" height="250"></canvas>
+                </div>
+            </div>
+
+            <!-- Patient List (improved table styling) -->
+            <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                <div class="p-4 border-b">
+                    <h3 class="text-lg md:text-xl font-semibold">Your Patients</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <ul id="patients-list" class="divide-y divide-gray-200 min-w-full"></ul>
+                </div>
+                <div class="flex justify-between p-4 border-t">
+                    <button id="prev-page" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition duration-300 text-sm">
+                        Previous
+                    </button>
+                    <button id="next-page" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition duration-300 text-sm">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Modal (improved layout) -->
+    <div id="patient-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-semibold">Patient Details</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Patient Profile -->
+                <div class="flex flex-col items-center">
+                    <img id="patient-profile-pic" class="rounded-full w-32 h-32 object-cover border-4 border-blue-100" alt="Profile Picture">
+                    <h4 class="text-lg font-semibold mt-3" id="patient-name"></h4>
+                    <p class="text-gray-600" id="patient-age-gender"></p>
+                    <p class="text-gray-600" id="patient-blood-type"></p>
+                </div>
+                
+                <!-- Medical Info -->
+                <div class="md:col-span-2 space-y-4">
+                    <div>
+                        <h4 class="font-semibold text-gray-700">Medical History:</h4>
+                        <p id="patient-medical-history" class="text-gray-600 mt-1"></p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-gray-700">Current Medications:</h4>
+                        <ul id="patient-medications" class="list-disc list-inside text-gray-600 mt-1"></ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-gray-700">Assigned Doctors:</h4>
+                        <ul id="patient-doctors" class="list-disc list-inside text-gray-600 mt-1"></ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons (improved responsive layout) -->
+            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button id="write-prescription" class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition duration-300 text-sm md:text-base">
+                    Prescription
+                </button>
+                <button id="write-report" class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 transition duration-300 text-sm md:text-base">
+                    Medical Report
+                </button>
+                <button id="view-appointments" class="bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 transition duration-300 text-sm md:text-base">
+                    Appointments
+                </button>
+                <button id="start-messaging" class="bg-yellow-600 text-white px-3 py-2 rounded hover:bg-yellow-700 transition duration-300 text-sm md:text-base">
+                    Message
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescription Form (improved styling) -->
+    <div id="prescription-form" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-bold">Prescription Form</h2>
+                <button id="close-prescription-form" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form id="prescriptionForm" class="space-y-4">
+                <div>
+                    <label for="patient-name" class="block text-sm font-medium text-gray-700">Patient Name:</label>
+                    <input type="text" id="patient-name" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" readonly required>
+                </div>
+
+                <div>
+                    <label for="medicine" class="block text-sm font-medium text-gray-700">Medicine:</label>
+                    <input type="text" id="medicine" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+
+                <div>
+                    <label for="dosage" class="block text-sm font-medium text-gray-700">Dosage:</label>
+                    <input type="text" id="dosage" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+
+                <div>
+                    <label for="notes" class="block text-sm font-medium text-gray-700">Notes:</label>
+                    <textarea id="notes" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="4"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300">
+                    Submit Prescription
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Medical Report Modal (improved layout) -->
+    <div id="report-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-lg w-11/12 md:w-2/3 lg:w-1/2 p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-bold">Write Medical Report</h2>
+                <button id="close-report-modal" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <form id="report-form" class="space-y-4">
+                <div>
+                    <label for="diagnosis" class="block text-sm font-medium text-gray-700">Diagnosis:</label>
+                    <textarea id="diagnosis" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="4" required></textarea>
+                </div>
+
+                <div>
+                    <label for="treatment" class="block text-sm font-medium text-gray-700">Treatment Plan:</label>
+                    <textarea id="treatment" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="4" required></textarea>
+                </div>
+
+                <div>
+                    <label for="notes" class="block text-sm font-medium text-gray-700">Additional Notes:</label>
+                    <textarea id="notes" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="4"></textarea>
+                </div>
+
+                <div>
+                    <label for="report-file" class="block text-sm font-medium text-gray-700">Upload File:</label>
+                    <input type="file" id="report-file" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" accept=".pdf,.png,.jpg,.jpeg,.docx">
+                </div>
+
+                <div>
+                    <label for="appointment-id" class="block text-sm font-medium text-gray-700">Appointment ID (optional):</label>
+                    <input type="text" id="appointment-id" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-300">
+                    Submit Report
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Appointments Container (improved styling) -->
+    <div id="appointments-container" class="hidden mt-6 bg-white shadow-md rounded-lg p-4">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Appointments</h2>
+            <button id="close-appointments" class="text-gray-500 hover:text-gray-700">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div id="appointments-list" class="space-y-3">
+            <!-- Appointments will be dynamically inserted here -->
+        </div>
+    </div>
+
+    
+    <script src="{% static 'js/doctor_dashboard.js' %}" defer></script>
+    <script  src="{% static 'js/doctor_messaging.js' %}" defer></script>
+</body>
+</html>

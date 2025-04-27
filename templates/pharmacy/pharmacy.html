@@ -1,0 +1,258 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Doctor Online Pharmacy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="{% static 'css/output.css' %}" rel="stylesheet">
+    <style>
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .item-card {
+            transition: all 0.3s ease;
+        }
+        .search-container {
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .pill-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #3B82F6;
+            color: white;
+            border-radius: 9999px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+
+<!-- Elegant Header -->
+<header class="bg-white shadow-sm sticky top-0 z-40">
+    <div class="container mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-2 rounded-lg">
+                    <i class="fas fa-pills text-white text-xl"></i>
+                </div>
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800">MiDoctor Pharmacy</h1>
+            </div>
+            <div class="relative">
+                <button id="cart-button" class="relative p-2 rounded-full hover:bg-gray-100 transition">
+                    <i class="fas fa-shopping-cart text-gray-700 text-xl"></i>
+                    <span id="cart-count" class="cart-badge hidden">0</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Search Bar -->
+<div class="bg-blue-50 py-6">
+    <div class="container mx-auto px-6">
+        <div class="search-container rounded-lg bg-white max-w-2xl mx-auto">
+            <div class="relative">
+                <input type="text" id="search-input" placeholder="Search medicines by name..." 
+                    class="w-full pl-12 pr-4 py-3 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <i class="fas fa-search absolute left-4 top-3.5 text-gray-400"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<main class="container mx-auto px-6 py-8">
+    <!-- Products Section -->
+    <section>
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold text-gray-800">Available Medicines</h2>
+            <div class="relative">
+                <span id="items-count" class="pill-badge">{{ items|length }} items</span>
+            </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            {% for item in items %}
+            <div class="bg-white rounded-xl shadow-md overflow-hidden item-card border border-gray-100">
+                {% if item.image %}
+                    <div class="h-56 overflow-hidden relative">
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+                    </div>
+                {% else %}
+                    <div class="h-56 bg-gray-100 flex items-center justify-center">
+                        <i class="fas fa-pills text-5xl text-gray-400"></i>
+                    </div>
+                {% endif %}
+                <div class="p-5">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-lg text-gray-800">{{ item.name }}</h3>
+                    </div>
+                    <p class="text-gray-500 text-sm mt-2">{{ item.description|truncatechars:60 }}</p>
+                    <div class="mt-5 flex justify-between items-center">
+                        <span class="font-bold text-blue-600 text-lg">KES {{ item.price }}</span>
+                        <button onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</main>
+
+<!-- Cart Sidebar -->
+<div id="cart-sidebar" class="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-xl transform translate-x-full transition-transform duration-300 z-50">
+    <div class="h-full flex flex-col">
+        <div class="p-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <h3 class="text-xl font-semibold text-gray-800">Your Shopping Cart</h3>
+            <button id="close-cart" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-200">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        
+        <div class="flex-grow overflow-y-auto p-5">
+            <ul id="cart-items" class="space-y-4">
+                <!-- Cart items will be added here -->
+            </ul>
+            
+            <div id="empty-cart-message" class="h-full flex flex-col items-center justify-center text-gray-400 py-10">
+                <i class="fas fa-shopping-cart text-5xl mb-4"></i>
+                <p class="text-lg font-medium">Your cart is empty</p>
+                <p class="text-sm mt-1">Add items to get started</p>
+            </div>
+        </div>
+        
+        <div class="p-5 border-t border-gray-200 bg-gray-50">
+            <div class="space-y-3 mb-5">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Subtotal:</span>
+                    <span class="font-semibold">KES <span id="total-price">0</span></span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Delivery:</span>
+                    <span class="font-semibold">KES 150</span>
+                </div>
+                <div class="border-t border-gray-200 my-2"></div>
+                <div class="flex justify-between">
+                    <span class="text-gray-800 font-medium">Total:</span>
+                    <span class="text-blue-600 font-bold">KES <span id="checkout-total">0</span></span>
+                </div>
+            </div>
+            <button id="checkout-button" 
+                class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition flex items-center justify-center shadow-md">
+                <i class="fas fa-lock mr-2"></i> Proceed to Payment
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="payment-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md fade-in">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-xl font-semibold text-gray-800">Complete Payment</h3>
+                <button id="close-payment-modal" class="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="mb-6">
+                <div class="flex items-center p-4 bg-blue-50 rounded-xl mb-4">
+                    <div class="bg-blue-100 p-3 rounded-full mr-3">
+                        <i class="fas fa-mobile-alt text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800">M-Pesa Payment</p>
+                        <p class="text-sm text-gray-500">Enter your M-Pesa phone number</p>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input type="tel" id="phone-number" placeholder="e.g. 0712345678" 
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex space-x-4">
+                <button id="cancel-payment" 
+                    class="flex-grow bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-medium transition">
+                    Cancel
+                </button>
+                <button id="confirm-payment" 
+                    class="flex-grow bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition flex items-center justify-center">
+                    <i class="fas fa-paper-plane mr-2"></i> Pay Now
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Processing Modal -->
+<div id="payment-processing" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md fade-in">
+        <div class="p-8 text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-6"></div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">Processing Payment</h3>
+            <p class="text-gray-600 mb-2">Please wait while we process your payment</p>
+            <p class="text-sm text-gray-500">You will receive an M-Pesa confirmation prompt</p>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Success Modal -->
+<div id="payment-success" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md fade-in">
+        <div class="p-8 text-center">
+            <div class="mx-auto mb-6 w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-check text-green-600 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">Payment Successful!</h3>
+            <p class="text-gray-600 mb-4">Your order has been placed successfully.</p>
+            <p class="text-sm text-gray-500 mb-6">Order ID: #{{ "now"|date:"YmdHis" }}</p>
+            <button id="continue-shopping" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition">
+                Continue Shopping
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/pharmacy.js' %}"></script>
+</body>
+</html>

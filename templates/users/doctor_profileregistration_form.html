@@ -1,0 +1,236 @@
+{% extends 'basepages/base.html' %}
+{% load static %}
+
+{% block content %}
+<body class="bg-gray-100 flex justify-center items-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
+        <!-- Header with Icon -->
+        <div class="flex items-center justify-center mb-6">
+            <svg class="w-8 h-8 text-indigo-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+            <h1 class="text-2xl font-bold text-gray-800">Create Doctor Profile</h1>
+        </div>
+
+        <form id="doctor-profile-form" class="space-y-6">
+            <!-- Specialization -->
+            <div>
+                <label for="specialization" class="block text-sm font-medium text-gray-700">Specialization</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="text" id="specialization" name="specialization" required
+                           class="block w-full p-2 pl-10 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+                           placeholder="Cardiology">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hospital -->
+            <div>
+                <label for="hospital" class="block text-sm font-medium text-gray-700">Hospital</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <select id="hospital" name="hospital" required
+                            class="block w-full p-2 pl-10 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                        <option value="">Select a Hospital</option>
+                    </select>
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consultation Fee -->
+            <div>
+                <label for="consultation_fee" class="block text-sm font-medium text-gray-700">Consultation Fee</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="number" id="consultation_fee" name="consultation_fee" required
+                           class="block w-full p-2 pl-10 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+                           placeholder="500">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Years of Experience -->
+            <div>
+                <label for="years_of_experience" class="block text-sm font-medium text-gray-700">Years of Experience</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="number" id="years_of_experience" name="years_of_experience" required
+                           class="block w-full p-2 pl-10 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+                           placeholder="5">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- License Number -->
+            <div>
+                <label for="license_number" class="block text-sm font-medium text-gray-700">License Number</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="text" id="license_number" name="license_number" required
+                           class="block w-full p-2 pl-10 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring focus:ring-indigo-200"
+                           placeholder="12345">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Certifications -->
+            <div>
+                <label for="certifications" class="block text-sm font-medium text-gray-700">Certifications</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="file" id="certifications" name="certifications"
+                           class="block w-full p-2 pl-10 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Days -->
+            <div>
+                <label for="available_days" class="block text-sm font-medium text-gray-700">Available Days</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <select id="available_days" name="available_days" multiple required
+                            class="block w-full p-2 pl-10 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    </select>
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Picture -->
+            <div>
+                <label for="profile_picture" class="block text-sm font-medium text-gray-700">Profile Picture</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="file" id="profile_picture" name="profile_picture"
+                           class="block w-full p-2 pl-10 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div>
+                <button type="submit" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 focus:ring focus:ring-indigo-300">
+                    Create Profile
+                </button>
+            </div>
+        </form>
+
+        <!-- Response Message -->
+        <div id="response-message" class="mt-4 text-center text-sm"></div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", async function () {
+       const baseUrl = window.location.origin;
+
+    try {
+        // Fetch hospitals
+        const hospitalResponse = await fetch(`${baseUrl}/api/appointments/hospital/list`);
+        if (!hospitalResponse.ok) throw new Error("Failed to fetch hospitals");
+        const hospitals = await hospitalResponse.json();
+
+        const hospitalSelect = document.getElementById("hospital");
+        hospitals.forEach(hospital => {
+            const option = document.createElement("option");
+            option.value = hospital.id;
+            option.textContent = hospital.name;
+            hospitalSelect.appendChild(option);
+        });
+
+        // Fetch available days
+        const daysResponse = await fetch(`${baseUrl}/api/users/week/`);
+        if (!daysResponse.ok) throw new Error("Failed to fetch available days");
+        const days = await daysResponse.json();
+
+        const daysSelect = document.getElementById("available_days");
+        days.forEach(day => {
+            const option = document.createElement("option");
+            option.value = day.day; // Use the "day" field from the response
+            option.textContent = day.day.charAt(0).toUpperCase() + day.day.slice(1); // Capitalize the first letter
+            daysSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        document.getElementById("response-message").innerText = "Failed to load form data. Please refresh the page.";
+    }
+});
+
+document.getElementById("doctor-profile-form").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const baseUrl = window.location.origin;
+
+
+    const formData = new FormData();
+    formData.append("specialization", document.getElementById("specialization").value);
+    formData.append("hospital", document.getElementById("hospital").value);
+    formData.append("consultation_fee", document.getElementById("consultation_fee").value);
+    formData.append("years_of_experience", document.getElementById("years_of_experience").value);
+    formData.append("license_number", document.getElementById("license_number").value);
+
+    // Handle multiple available days
+    const selectedDays = Array.from(document.getElementById("available_days").selectedOptions).map(option => option.value);
+    selectedDays.forEach(day => formData.append("available_days", day));
+
+    // Handle file uploads
+    const profilePicture = document.getElementById("profile_picture").files[0];
+    if (profilePicture) formData.append("profile_picture", profilePicture);
+
+    const certifications = document.getElementById("certifications").files[0];
+    if (certifications) formData.append("certifications", certifications);
+
+    try {
+        const accessToken = localStorage.getItem("access_token");
+        if (!accessToken) {
+            alert("You are not logged in. Please log in first.");
+            window.location.href = `${baseUrl}api/users/login-page/`;
+            return;
+        }
+
+        const response = await fetch(`${baseUrl}/api/users/doctor/create`, {
+            method: "POST",
+            body: formData,
+            headers: {
+                "Authorization": `Bearer ${accessToken}`
+            }
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            document.getElementById("response-message").innerText = "Profile created successfully!";
+            setTimeout(() => window.location.href = `${baseUrl}/api/users/dashboard/`, 2000);
+        } else {
+            document.getElementById("response-message").innerText = `Error: ${result.detail || "Unknown error"}`;
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("response-message").innerText = "An error occurred. Please try again.";
+    }
+});
+    </script>
+</body>
+{% endblock %}

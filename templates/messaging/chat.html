@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto max-w-6xl p-4">
+        <!-- Header -->
+        <header class="bg-white shadow rounded-lg p-4 mb-6">
+            <h1 class="text-2xl font-bold text-blue-800">Medical Chat</h1>
+            <p class="text-gray-600">Secure communication with your doctor/patient</p>
+        </header>
+
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Conversations List -->
+            <div class="w-full md:w-1/3 bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-800">Conversations</h2>
+                    <div class="relative mt-2">
+                        <input type="text" placeholder="Search conversations..." 
+                               class="w-full p-2 pl-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute left-2 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+                <div id="conversations-list" class="divide-y divide-gray-200 overflow-y-auto" style="max-height: 500px;">
+                    <!-- Conversations will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="w-full md:w-2/3 bg-white rounded-lg shadow overflow-hidden flex flex-col" style="height: 600px;">
+                <div id="chat-header" class="p-4 border-b border-gray-200 bg-blue-50">
+                    <h2 id="chat-partner-name" class="text-lg font-semibold text-gray-800">Select a conversation</h2>
+                    <p id="chat-partner-specialization" class="text-sm text-gray-600"></p>
+                </div>
+                
+                <div id="messages-container" class="flex-1 p-4 overflow-y-auto bg-gray-50">
+                    <div class="text-center text-gray-500 py-10">
+                        Select a conversation to start chatting
+                    </div>
+                </div>
+                
+                <div id="message-input-area" class="p-4 border-t border-gray-200 bg-white hidden">
+                    <div class="flex items-center gap-2 mb-2">
+                        <button id="attach-file-btn" class="p-2 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-50">
+                            <i class="fas fa-paperclip"></i>
+                            <input type="file" id="file-input" class="hidden" accept="image/*,application/pdf,.doc,.docx">
+                        </button>
+                        <span id="file-name" class="text-sm text-gray-500 truncate max-w-xs"></span>
+                        <button id="clear-file-btn" class="ml-auto p-1 text-red-500 hover:text-red-700 hidden">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="message-input" placeholder="Type your message..." 
+                               class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentConversationId = null;
+        let currentUserRole = null;
+        let socket = null;
+        let selectedFile = null;
+
+        // DOM Elements
+        const conversationsList = document.getElementById('conversations-list');
+        const messagesContainer = document.getElementById('messages-container');
+        const messageInputArea = document.getElementById('message-input-area');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const fileInput = document.getElementById('file-input');
+        const attachFileBtn = document.getElementById('attach-file-btn');
+        const fileNameDisplay = document.getElementById('file-name');
+        const clearFileBtn = document.getElementById('clear-file-btn');
+        const chatPartnerName = document.getElementById('chat-partner-name');
+        const chatPartnerSpecialization = document.getElementById('chat-partner-specialization');
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Get access token from local storage
+            const accessToken = localStorage.getItem('access_token');
+            if (!accessToken) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Get user role from token
+            currentUserRole = await getUserRole(accessToken);
+            
+            // Load conversations
+            await loadConversations(accessToken);
+            
+            // Set up event listeners
+            setupEventListeners();
+        });
+
+        // Get user role from token
+        async function getUserRole(token) {
+            try {
+                const response = await fetch('/api/users/me/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                return data.role;
+            } catch (error) {
+                console.error('Error getting user role:', error);
+                return null;
+            }
+        }
+
+        // Load conversations list
+        async function loadConversations(token) {
+            try {
+                const response = await fetch('/api/chat/conversations/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const conversations = await response.json();
+                
+                conversationsList.innerHTML = '';
+                
+                if (conversations.length === 0) {
+                    conversationsList.innerHTML = `
+                        <div class="p-4 text-center text-gray-500">
+                            No conversations yet
+                        </div>
+                    `;
+                    return;
+                }
+                
+                conversations.forEach(conversation => {
+                    const partnerName = currentUserRole === 'doctor' 
+                        ? conversation.patient_name 
+                        : conversation.doctor_name;
+                    
+                    const lastMessage = conversation.last_message?.content 
+                        ? (conversation.last_message.content.length > 30 
+                            ? conversation.last_message.content.substring(0, 30) + '...' 
+                            : conversation.last_message.content)
+                        : 'No messages yet';
+                    
+                    const unreadClass = conversation.unread_count > 0 ? 'bg-blue-50' : '';
+                    
+                    const conversationElement = document.createElement('div');
+                    conversationElement.className = `p-3 hover:bg-gray-50 cursor-pointer ${unreadClass}`;
+                    conversationElement.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-800">${partnerName}</h3>
+                                <p class="text-sm text-gray-500 truncate">${lastMessage}</p>
+                            </div>
+                            ${conversation.unread_count > 0 ? `
+                                <span class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                    ${conversation.unread_count}
+                                </span>
+                            ` : ''}
+                        </div>
+                    `;
+                    
+                    conversationElement.addEventListener('click', () => {
+                        openConversation(conversation.id, token, partnerName, 
+                            currentUserRole === 'doctor' ? '' : conversation.doctor_specialization);
+                    });
+                    
+                    conversationsList.appendChild(conversationElement);
+                });
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                conversationsList.innerHTML = `
+                    <div class="p-4 text-center text-red-500">
+                        Error loading conversations. Please try again.
+                    </div>
+                `;
+            }
+        }
+
+        // Open a conversation
+        async function openConversation(conversationId, token, partnerName, specialization = '') {
+            currentConversationId = conversationId;
+            chatPartnerName.textContent = partnerName;
+            chatPartnerSpecialization.textContent = specialization || '';
+            messageInputArea.classList.remove('hidden');
+            
+            // Load messages
+            await loadMessages(conversationId, token);
+            
+            // Set up WebSocket connection
+            setupWebSocket(conversationId, token);
+        }
+
+        // Load messages for a conversation
+        async function loadMessages(conversationId, token) {
+            try {
+                const response = await fetch(`/api/chat/conversations/${conversationId}/messages/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const messages = await response.json();
+                
+                messagesContainer.innerHTML = '';
+                
+                if (messages.length === 0) {
+                    messagesContainer.innerHTML = `
+                        <div class="text-center text-gray-500 py-10">
+                            No messages yet. Start the conversation!
+                        </div>
+                    `;
+                    return;
+                }
+                
+                messages.forEach(message => {
+                    addMessageToUI(message, token);
+                });
+                
+                // Scroll to bottom
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // Mark messages as read
+                await markMessagesAsRead(conversationId, token);
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                messagesContainer.innerHTML = `
+                    <div class="text-center text-red-500 py-10">
+                        Error loading messages. Please try again.
+                    </div>
+                `;
+            }
+        }
+
+        // Add a message to the UI
+        function addMessageToUI(message, token) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `mb-4 flex ${message.sender.role === currentUserRole ? 'justify-end' : 'justify-start'}`;
+            
+            const isCurrentUser = message.sender.role === currentUserRole;
+            const bgColor = isCurrentUser ? 'bg-blue-100' : 'bg-white';
+            const textAlign = isCurrentUser ? 'text-right' : 'text-left';
+            
+            let fileContent = '';
+            if (message.file) {
+                if (message.file_type === 'image') {
+                    fileContent = `
+                        <div class="mt-2 rounded-lg overflow-hidden border border-gray-200">
+                            <img src="${message.file}" alt="Attachment" class="max-w-full h-auto max-h-64 object-contain">
+                        </div>
+                    `;
+                } else {
+                    fileContent = `
+                        <div class="mt-2">
+                            <a href="${message.file}" target="_blank" class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-file mr-2"></i>
+                                View attached file
+                            </a>
+                        </div>
+                    `;
+                }
+            }
+            
+            messageElement.innerHTML = `
+                <div class="max-w-xs md:max-w-md lg:max-w-lg">
+                    <div class="${bgColor} ${textAlign} p-3 rounded-lg shadow-sm border border-gray-200">
+                        ${!isCurrentUser ? `
+                            <div class="font-semibold text-sm text-gray-700 mb-1">${message.sender.first_name} ${message.sender.last_name}</div>
+                        ` : ''}
+                        ${message.content ? `<div class="text-gray-800 mb-1">${message.content}</div>` : ''}
+                        ${fileContent}
+                        <div class="text-xs text-gray-500 mt-1">
+                            ${new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            ${message.read ? '<i class="fas fa-check-double ml-1 text-blue-500"></i>' : '<i class="fas fa-check ml-1 text-gray-400"></i>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageElement);
+        }
+
+        // Set up WebSocket connection
+        function setupWebSocket(conversationId, token) {
+            // Close existing connection if any
+            if (socket) {
+                socket.close();
+            }
+            
+            const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            const wsUrl = `${wsScheme}${window.location.host}/ws/chat/${conversationId}/?token=${token}`;
+            
+            socket = new WebSocket(wsUrl);
+            
+            socket.onopen = () => {
+                console.log('WebSocket connected');
+            };
+            
+            socket.onmessage = (e) => {
+                const message = JSON.parse(e.data);
+                addMessageToUI(message, token);
+                
+                // Scroll to bottom
+                setTimeout(() => {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }, 100);
+            };
+            
+            socket.onclose = () => {
+                console.log('WebSocket disconnected');
+            };
+            
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Mark messages as read
+        async function markMessagesAsRead(conversationId, token) {
+            try {
+                await fetch(`/api/chat/conversations/${conversationId}/read/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Refresh conversations list to update unread counts
+                await loadConversations(token);
+            } catch (error) {
+                console.error('Error marking messages as read:', error);
+            }
+        }
+
+        // Upload file
+        async function uploadFile(file, token) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/chat/upload/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                return null;
+            }
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Send message on button click
+            sendBtn.addEventListener('click', async () => {
+                await sendMessage();
+            });
+            
+            // Send message on Enter key
+            messageInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    await sendMessage();
+                }
+            });
+            
+            // File attachment
+            attachFileBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    selectedFile = e.target.files[0];
+                    fileNameDisplay.textContent = selectedFile.name;
+                    fileNameDisplay.classList.remove('hidden');
+                    clearFileBtn.classList.remove('hidden');
+                    
+                    // Detect file type
+                    if (selectedFile.type.startsWith('image/')) {
+                        fileType = 'image';
+                    } else if (selectedFile.type === 'application/pdf') {
+                        fileType = 'pdf';
+                    } else if (selectedFile.type.includes('document') || selectedFile.name.endsWith('.docx')) {
+                        fileType = 'document';
+                    } else {
+                        fileType = 'file';
+                    }
+                }
+            });
+            
+            clearFileBtn.addEventListener('click', () => {
+                selectedFile = null;
+                fileInput.value = '';
+                fileNameDisplay.textContent = '';
+                fileNameDisplay.classList.add('hidden');
+                clearFileBtn.classList.add('hidden');
+            });
+        }
+
+        // Send message
+        async function sendMessage() {
+            const accessToken = localStorage.getItem('access_token');
+            const messageText = messageInput.value.trim();
+            
+            if (!messageText && !selectedFile) return;
+            
+            try {
+                let fileUrl = null;
+                let fileType = null;
+                
+                if (selectedFile) {
+                    const uploadResult = await uploadFile(selectedFile, accessToken);
+                    if (uploadResult) {
+                        fileUrl = uploadResult.url;
+                        fileType = uploadResult.file_type;
+                    }
+                }
+                
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'chat_message',
+                        content: messageText,
+                        file: fileUrl,
+                        file_type: fileType
+                    }));
+                    
+                    // Clear inputs
+                    messageInput.value = '';
+                    selectedFile = null;
+                    fileInput.value = '';
+                    fileNameDisplay.textContent = '';
+                    fileNameDisplay.classList.add('hidden');
+                    clearFileBtn.classList.add('hidden');
+                    
+                    // Scroll to bottom
+                    setTimeout(() => {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Failed to send message. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>

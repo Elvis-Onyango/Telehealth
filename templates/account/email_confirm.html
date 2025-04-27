@@ -1,0 +1,26 @@
+{% extends "basepages/base.html" %}
+{% load static tailwind_tags %}
+
+{% block content %}
+<div class="flex min-h-screen items-center justify-center bg-gray-100 p-6">
+  <div class="w-full max-w-md bg-white shadow-lg rounded-2xl p-6 transform transition-all duration-500 hover:scale-105">
+    
+    <div class="flex justify-center">
+      <svg class="w-16 h-16 text-blue-500 animate-bounce" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12H3m13 0a4 4 0 100-8H3m13 8a4 4 0 110 8H3" />
+      </svg>
+    </div>
+
+    <h2 class="text-2xl font-semibold text-center text-gray-800 mt-4">Email Verification Sent</h2>
+    
+    <p class="text-center text-gray-600 mt-2">
+      Please check your email inbox and click the verification link to confirm your account.
+    </p>
+
+    <div class="text-center mt-4">
+      <a href="{% url 'account_login' %}" class="text-blue-500 font-medium hover:underline">Return to Login</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

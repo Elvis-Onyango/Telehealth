@@ -1,0 +1,532 @@
+{% extends "basepages/base.html" %}
+{% load static %}
+{% load static tailwind_tags %}
+
+{% block content %}
+<body class="bg-gray-50 font-sans">
+  <!-- Hero Section -->
+  <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto text-center">
+      <h1 class="text-4xl font-bold mb-4">Find Your Perfect Doctor</h1>
+      <p class="text-xl mb-8">Book appointments with top specialists in your area</p>
+      <div class="bg-white rounded-lg p-1 max-w-md mx-auto shadow-lg">
+        <div class="flex items-center px-4 py-2">
+          <i class="fas fa-search text-gray-400 mr-2"></i>
+          <input type="text" id="search-input" placeholder="Search doctors by name, specialty..." class="w-full outline-none text-gray-700">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Filters Section -->
+    <div class="mb-8 bg-white p-4 rounded-lg shadow-sm">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
+          <select id="specialty-filter" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option value="">All Specialties</option>
+            <!-- Populated from database -->
+            {% for specialty in specialties %}
+            <option value="{{ specialty }}">{{ specialty }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Hospital</label>
+          <select id="hospital-filter" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option value="">All Hospitals</option>
+            <!-- Populated from database -->
+            {% for hospital in hospitals %}
+            <option value="{{ hospital }}">{{ hospital }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Availability</label>
+          <select id="availability-filter" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option value="">Any Day</option>
+            <!-- Populated from database -->
+            {% for day in days %}
+            <option value="{{ day }}">{{ day }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button id="reset-filters" class="text-blue-600 hover:text-blue-800 mt-6">
+          Reset Filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Loader -->
+    <div id="loading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+      <p class="text-gray-600">Loading doctors...</p>
+    </div>
+
+    <!-- Doctor List -->
+    <div id="doctor-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Initial server-side rendering -->
+      {% for doctor in doctors %}
+      <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+        <div class="relative h-40 bg-gradient-to-r from-blue-500 to-blue-700 flex items-center justify-center">
+          <img src="{{ doctor.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+               class="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover" 
+               alt="Doctor Profile Picture">
+          <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-center">
+            <span class="text-sm font-medium">{{ doctor.specialization|default:"General Practitioner" }}</span>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-1">
+            Dr. {{ doctor.user.username }}
+          </h3>
+          <p class="text-gray-600 mb-3 flex items-center">
+            <i class="fas fa-hospital text-blue-500 mr-2"></i>
+            {{ doctor.hospital.name|default:"Multiple Locations" }}
+          </p>
+
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-sm text-gray-600 flex items-center">
+              <i class="fas fa-star text-yellow-400 mr-1"></i>
+              4.8 (120 reviews)
+            </span>
+            <span class="text-green-600 font-bold">
+              Ksh {{ doctor.consultation_fee|default:"0" }}
+            </span>
+          </div>
+
+          <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-1">
+              <i class="far fa-calendar-alt text-blue-500 mr-2"></i>
+              Available: 
+              {% if doctor.available_days.all %}
+                {% for day in doctor.available_days.all %}{{ day.day }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              {% else %}
+                Contact for availability
+              {% endif %}
+            </p>
+          </div>
+
+          <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  onclick="openModal({{ doctor.id }}, {{ doctor.consultation_fee|default:0 }}, '{{ doctor.user.username }}', '{{ doctor.hospital.name|default:"" }}', '{{ doctor.specialization|default:"General Practitioner" }}', '{{ doctor.profile_picture.url|default:"/static/images/default-avatar.png" }}')">
+            <i class="far fa-calendar mr-2"></i> Book Now
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-12">
+      <i class="fas fa-user-md text-4xl text-gray-300 mb-4"></i>
+      <h3 class="text-xl font-medium text-gray-600">No doctors found</h3>
+      <p class="text-gray-500 mt-2">Try adjusting your filters or search criteria</p>
+    </div>
+  </div>
+
+  <!-- Booking Modal -->
+  <div id="modal-backdrop" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+    <div id="booking-modal" class="w-full max-w-md bg-white rounded-xl shadow-2xl transform transition-all duration-300 max-h-[90vh] overflow-y-auto scale-95 opacity-0">
+      <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center z-10">
+        <h2 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-calendar-check text-blue-600 mr-2"></i> Book Appointment
+        </h2>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="p-6">
+        <!-- Doctor Summary -->
+        <div class="flex items-center mb-6 p-4 bg-blue-50 rounded-lg">
+          <img id="modal-doctor-image" src="{% static 'images/default-avatar.png' %}" class="w-16 h-16 rounded-full border-4 border-white shadow-sm mr-4">
+          <div>
+            <h3 id="modal-doctor-name" class="font-bold text-gray-800">Dr. Name</h3>
+            <p id="modal-doctor-specialty" class="text-sm text-gray-600">Specialty</p>
+            <p id="modal-doctor-hospital" class="text-sm text-gray-600">Hospital</p>
+          </div>
+        </div>
+
+        <!-- Booking Form -->
+        <form class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <input type="date" id="appointment-date" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+              <input type="time" id="appointment-time" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+          </div>
+
+          <!-- Payment Section -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-gray-700">Consultation Fee:</span>
+              <span id="consultation-fee" class="font-bold text-green-600">Ksh 0</span>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+              <div class="grid grid-cols-2 gap-3">
+                <button type="button" data-method="mpesa" class="payment-method-btn border rounded-lg p-3 flex items-center justify-center hover:border-blue-500 transition-colors">
+                  <i class="fas fa-mobile-alt text-green-600 mr-2"></i>
+                  <span>M-Pesa</span>
+                </button>
+                <button type="button" data-method="card" class="payment-method-btn border rounded-lg p-3 flex items-center justify-center hover:border-blue-500 transition-colors">
+                  <i class="far fa-credit-card text-blue-600 mr-2"></i>
+                  <span>Card</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="mpesa-phone-input" class="hidden">
+              <label class="block text-sm font-medium text-gray-700 mb-1">M-Pesa Phone Number</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span class="text-gray-500">+254</span>
+                </div>
+                <input type="tel" id="mpesa-phone" class="pl-12 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="712 345 678">
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="space-y-3">
+            <button type="button" onclick="processPayment()" id="pay-btn" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
+              <i class="fas fa-lock mr-2"></i>
+              <span id="pay-text">Pay Now</span>
+            </button>
+
+            <div id="payment-processing" class="hidden p-4 bg-blue-50 text-blue-700 rounded-lg text-center">
+              <div class="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600 mr-2"></div>
+              <span>Processing Payment...</span>
+            </div>
+
+            <button type="button" onclick="submitBooking()" id="confirm-btn" disabled class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors opacity-70 flex items-center justify-center">
+              <i class="fas fa-calendar-check mr-2"></i>
+              <span id="confirm-text">Confirm Booking</span>
+              <span id="loading-spinner" class="hidden ml-2">
+                <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BASE_URL = window.location.origin;
+    let selectedDoctorId = null;
+    let consultationFee = 0;
+    let paymentConfirmed = false;
+    let selectedPaymentMethod = null;
+    let allDoctors = [];
+
+    // Initialize with server-rendered doctors
+    document.addEventListener("DOMContentLoaded", function() {
+      // Convert server-rendered doctors to JS array
+      allDoctors = [
+        {% for doctor in doctors %}
+        {
+          id: {{ doctor.id }},
+          user: { username: "{{ doctor.user.username }}" },
+          specialization: "{{ doctor.specialization|default:'' }}",
+          hospital: { name: "{{ doctor.hospital.name|default:'' }}" },
+          consultation_fee: {{ doctor.consultation_fee|default:0 }},
+          profile_picture: "{{ doctor.profile_picture.url|default:'/static/images/default-avatar.png' }}",
+          available_days: [
+            {% for day in doctor.available_days.all %}
+            { day: "{{ day.day }}" }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+          ]
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+      ];
+
+      // Hide loading indicator since we have server-rendered content
+      document.getElementById("loading").style.display = "none";
+      
+      // If no doctors, show empty state
+      if (allDoctors.length === 0) {
+        document.getElementById("empty-state").classList.remove("hidden");
+      }
+
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      // Search functionality
+      document.getElementById("search-input").addEventListener("input", function() {
+        filterDoctors();
+      });
+
+      // Filter functionality
+      document.getElementById("specialty-filter").addEventListener("change", filterDoctors);
+      document.getElementById("hospital-filter").addEventListener("change", filterDoctors);
+      document.getElementById("availability-filter").addEventListener("change", filterDoctors);
+
+      // Reset filters
+      document.getElementById("reset-filters").addEventListener("click", function() {
+        document.getElementById("search-input").value = "";
+        document.getElementById("specialty-filter").value = "";
+        document.getElementById("hospital-filter").value = "";
+        document.getElementById("availability-filter").value = "";
+        filterDoctors();
+      });
+
+      // Payment method selection
+      document.querySelectorAll('.payment-method-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.payment-method-btn').forEach(b => {
+            b.classList.remove('border-blue-500', 'bg-blue-50');
+          });
+          this.classList.add('border-blue-500', 'bg-blue-50');
+          selectedPaymentMethod = this.dataset.method;
+          
+          if (selectedPaymentMethod === 'mpesa') {
+            document.getElementById('mpesa-phone-input').classList.remove('hidden');
+          } else {
+            document.getElementById('mpesa-phone-input').classList.add('hidden');
+          }
+        });
+      });
+    }
+
+    function filterDoctors() {
+      const searchTerm = document.getElementById("search-input").value.toLowerCase();
+      const specialtyFilter = document.getElementById("specialty-filter").value;
+      const hospitalFilter = document.getElementById("hospital-filter").value;
+      const availabilityFilter = document.getElementById("availability-filter").value;
+
+      const filteredDoctors = allDoctors.filter(doctor => {
+        // Search term matching (name or specialty)
+        const matchesSearch = !searchTerm || 
+          (doctor.user.username.toLowerCase().includes(searchTerm)) ||
+          (doctor.specialization && doctor.specialization.toLowerCase().includes(searchTerm));
+
+        // Specialty filter
+        const matchesSpecialty = !specialtyFilter || 
+          (doctor.specialization && doctor.specialization === specialtyFilter);
+
+        // Hospital filter
+        const matchesHospital = !hospitalFilter || 
+          (doctor.hospital && doctor.hospital.name === hospitalFilter);
+
+        // Availability filter
+        const matchesAvailability = !availabilityFilter || 
+          (doctor.available_days && doctor.available_days.some(day => day.day === availabilityFilter));
+
+        return matchesSearch && matchesSpecialty && matchesHospital && matchesAvailability;
+      });
+
+      renderDoctors(filteredDoctors);
+    }
+
+    function renderDoctors(doctors) {
+      const doctorListContainer = document.getElementById("doctor-list");
+      const emptyState = document.getElementById("empty-state");
+
+      if (doctors.length === 0) {
+        doctorListContainer.innerHTML = "";
+        emptyState.classList.remove("hidden");
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+      doctorListContainer.innerHTML = "";
+
+      doctors.forEach(doctor => {
+        if (!doctor || !doctor.id) return;
+
+        const doctorCard = `
+          <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+            <div class="relative h-40 bg-gradient-to-r from-blue-500 to-blue-700 flex items-center justify-center">
+              <img src="${doctor.profile_picture}" 
+                   class="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover" 
+                   alt="Doctor Profile Picture">
+              <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-center">
+                <span class="text-sm font-medium">${doctor.specialization || "General Practitioner"}</span>
+              </div>
+            </div>
+
+            <div class="p-6">
+              <h3 class="text-xl font-bold text-gray-800 mb-1">
+                Dr. ${doctor.user.username}
+              </h3>
+              <p class="text-gray-600 mb-3 flex items-center">
+                <i class="fas fa-hospital text-blue-500 mr-2"></i>
+                ${doctor.hospital?.name || "Multiple Locations"}
+              </p>
+
+              <div class="flex justify-between items-center mb-4">
+                <span class="text-sm text-gray-600 flex items-center">
+                  <i class="fas fa-star text-yellow-400 mr-1"></i>
+                  4.8 (120 reviews)
+                </span>
+                <span class="text-green-600 font-bold">
+                  Ksh ${doctor.consultation_fee || "0"}
+                </span>
+              </div>
+
+              <div class="mb-4">
+                <p class="text-sm text-gray-600 mb-1">
+                  <i class="far fa-calendar-alt text-blue-500 mr-2"></i>
+                  Available: ${doctor.available_days?.map(day => day.day).join(", ") || "Contact for availability"}
+                </p>
+              </div>
+
+              <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      onclick="openModal(${doctor.id}, ${doctor.consultation_fee}, '${doctor.user.username}', '${doctor.hospital?.name}', '${doctor.specialization || "General Practitioner"}', '${doctor.profile_picture}')">
+                <i class="far fa-calendar mr-2"></i> Book Now
+              </button>
+            </div>
+          </div>
+        `;
+        doctorListContainer.innerHTML += doctorCard;
+      });
+    }
+
+    function openModal(doctorId, fee, doctorName, hospitalName, specialty, profilePic) {
+      selectedDoctorId = doctorId;
+      consultationFee = fee;
+
+      // Set modal content
+      document.getElementById("modal-doctor-name").textContent = `Dr. ${doctorName}`;
+      document.getElementById("modal-doctor-specialty").textContent = specialty;
+      document.getElementById("modal-doctor-hospital").textContent = hospitalName;
+      document.getElementById("consultation-fee").textContent = `Ksh ${fee}`;
+      document.getElementById("modal-doctor-image").src = profilePic;
+
+      // Show modal with animation
+      document.getElementById("modal-backdrop").classList.remove("hidden");
+      setTimeout(() => {
+        document.getElementById("booking-modal").classList.remove("scale-95", "opacity-0");
+        document.getElementById("booking-modal").classList.add("scale-100", "opacity-100");
+      }, 10);
+
+      // Reset form state
+      paymentConfirmed = false;
+      document.getElementById("confirm-btn").disabled = true;
+      document.getElementById("payment-processing").classList.add("hidden");
+      document.querySelectorAll('.payment-method-btn').forEach(b => {
+        b.classList.remove('border-blue-500', 'bg-blue-50');
+      });
+      document.getElementById('mpesa-phone-input').classList.add('hidden');
+      selectedPaymentMethod = null;
+    }
+
+    function closeModal() {
+      document.getElementById("booking-modal").classList.remove("scale-100", "opacity-100");
+      document.getElementById("booking-modal").classList.add("scale-95", "opacity-0");
+      setTimeout(() => {
+        document.getElementById("modal-backdrop").classList.add("hidden");
+      }, 300);
+    }
+
+    async function processPayment() {
+      if (!selectedPaymentMethod) {
+        alert("Please select a payment method");
+        return;
+      }
+
+      if (selectedPaymentMethod === 'mpesa' && !document.getElementById('mpesa-phone').value) {
+        alert("Please enter your M-Pesa phone number");
+        return;
+      }
+
+      const payBtn = document.getElementById("pay-btn");
+      const paymentProcessing = document.getElementById("payment-processing");
+      
+      payBtn.disabled = true;
+      paymentProcessing.classList.remove("hidden");
+
+      // Simulate payment processing
+      setTimeout(() => {
+        paymentProcessing.classList.add("hidden");
+        payBtn.classList.add("hidden");
+        document.getElementById("confirm-btn").disabled = false;
+        document.getElementById("confirm-btn").classList.remove("opacity-70");
+        paymentConfirmed = true;
+        
+        // Show success message
+        const successDiv = document.createElement('div');
+        successDiv.className = 'p-4 bg-green-50 text-green-700 rounded-lg text-center mb-4';
+        successDiv.innerHTML = `
+          <div class="flex items-center justify-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Payment successful! Please confirm your booking.
+          </div>
+        `;
+        paymentProcessing.after(successDiv);
+      }, 3000);
+    }
+
+    async function submitBooking() {
+      if (!paymentConfirmed) {
+        alert("Please complete payment first");
+        return;
+      }
+
+      const date = document.getElementById("appointment-date").value;
+      const time = document.getElementById("appointment-time").value;
+
+      if (!date || !time) {
+        alert("Please select a date and time");
+        return;
+      }
+
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        alert("Please log in to book an appointment");
+        window.location.href = "/api/users/login-page/";
+        return;
+      }
+
+      const confirmBtn = document.getElementById("confirm-btn");
+      confirmBtn.disabled = true;
+      document.getElementById("loading-spinner").classList.remove("hidden");
+
+      try {
+        const response = await fetch(`${BASE_URL}/api/appointments/appointments/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            date,
+            time,
+            doctor: selectedDoctorId,
+            payment_method: selectedPaymentMethod,
+            mpesa_phone: selectedPaymentMethod === "mpesa" ? document.getElementById("mpesa-phone").value : null
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Booking failed");
+        }
+
+        alert("Appointment booked successfully!");
+        window.location.href = "/api/users/patient-dashboard/";
+      } catch (error) {
+        console.error("Booking Error:", error);
+        alert(error.message || "Failed to book appointment. Please try again.");
+        confirmBtn.disabled = false;
+      } finally {
+        document.getElementById("loading-spinner").classList.add("hidden");
+      }
+    }
+
+    function getCSRFToken() {
+      return document.cookie.split("; ").find(row => row.startsWith("csrftoken"))?.split("=")[1];
+    }
+  </script>
+</body>
+{% endblock %}

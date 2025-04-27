@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center h-screen bg-gray-100">
+
+    <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg transform transition-all duration-500 hover:scale-105">
+        <h2 class="text-2xl font-bold text-center text-gray-700">Login</h2>
+        <form id="loginForm" class="mt-6">
+    <div>
+        <label class="block text-gray-600 text-sm">Username</label>
+        <input type="text" id="username" class="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400">
+    </div>
+    <div class="mt-4">
+        <label class="block text-gray-600 text-sm">Password</label>
+        <input type="password" id="password" class="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400">
+    </div>
+    <div class="mt-4">
+        <label class="block text-gray-600 text-sm">Select Role</label>
+        <select id="role" class="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="doctor">Doctor</option>
+            <option value="patient">Patient</option>
+            <option value="patient">Admin</option>
+        </select>
+    </div>
+    <button type="submit" class="w-full mt-6 px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all">Login</button>
+</form>
+
+<p id="error-message" class="text-red-500 text-center mt-2 hidden">Invalid credentials</p>
+
+<script>
+document.getElementById("loginForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+
+    // Get CSRF token from the cookie
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith("csrftoken=")) {
+                    cookieValue = cookie.substring("csrftoken=".length, cookie.length);
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    try {
+        const response = await fetch("/api/auth/login/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCSRFToken(), // Send CSRF token in the header
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error("Login failed. Check credentials.");
+        }
+
+        const data = await response.json();
+        localStorage.setItem("token", data.token);
+
+        // Redirect based on role
+        switch (document.getElementById("role").value) {
+            case "doctor":
+                window.location.href = "/users/doctor.html";
+                break;
+            case "patient":
+                window.location.href = "/users/patient.html";
+                break;
+            case "admin":
+                window.location.href = "/admin/dashboard/";
+                break;
+            default:
+                window.location.href = "/";
+        }
+
+    } catch (error) {
+        document.getElementById("error-message").textContent = "Login failed. Try again.";
+        document.getElementById("error-message").classList.remove("hidden");
+    }
+});
+
+
+</script>
+
+
+</body>
+</html>

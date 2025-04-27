@@ -1,0 +1,220 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MiDoctor - Virtual Healthcare{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
+    
+    <!-- CSS Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#4f46e5',
+                        secondary: '#7c3aed',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        .mobile-menu {
+            max-height: 0;
+            transition: max-height 0.5s cubic-bezier(0.77,0.2,0.05,1.0);
+            overflow: hidden;
+        }
+        .mobile-menu.open {
+            max-height: 100vh;
+        }
+        .gradient-text {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-50 flex flex-col min-h-screen">
+    <!-- Sticky Navbar -->
+    <header class="sticky top-0 z-50 bg-white shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo/Brand -->
+                <div class="flex items-center">
+                    <a href="{% url 'landing:landing_page' %}" class="flex items-center">
+                        <img src="{% static 'images/logo3.webp' %}" alt="MiDoctor" class="h-10 w-auto mr-2">
+                        <span class="text-2xl font-bold gradient-text">MiDoctor</span>
+                    </a>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex items-center space-x-8">
+                    <a href="{% url 'landing:landing_page' %}" class="text-gray-700 hover:text-primary font-medium transition">Home</a>
+                    <a href="#features" class="text-gray-700 hover:text-primary font-medium transition">Features</a>
+                    <a href="#how-it-works" class="text-gray-700 hover:text-primary font-medium transition">How It Works</a>
+                    <a href="#doctors" class="text-gray-700 hover:text-primary font-medium transition">Doctors</a>
+                    
+                    <div class="flex items-center space-x-4 ml-6">
+                        <a href="{% url 'users:login-page' %}" class="px-4 py-2 text-primary font-medium hover:bg-indigo-50 rounded-lg transition">Log In</a>
+                        <a href="{% url 'users:register-page' %}" class="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg hover:shadow-md transition">Sign Up</a>
+                    </div>
+                </nav>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-button" class="md:hidden text-gray-700 focus:outline-none">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="mobile-menu md:hidden bg-white">
+                <div class="flex flex-col space-y-4 px-4 py-6">
+                    <a href="{% url 'landing:landing_page' %}" class="text-gray-700 font-medium py-2">Home</a>
+                    <a href="#features" class="text-gray-700 font-medium py-2">Features</a>
+                    <a href="#how-it-works" class="text-gray-700 font-medium py-2">How It Works</a>
+                    <a href="#doctors" class="text-gray-700 font-medium py-2">Doctors</a>
+                    <div class="pt-4 space-y-3">
+                        <a href="{% url 'users:login-page' %}" class="block w-full text-center px-4 py-2 border border-primary text-primary font-medium rounded-lg">Log In</a>
+                        <a href="{% url 'users:register-page' %}" class="block w-full text-center px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white font-medium rounded-lg">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        {% block content %}
+        <!-- Content will be injected here -->
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300">
+        <div class="container mx-auto px-4 sm:px-6 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- About Column -->
+                <div>
+                    <div class="flex items-center mb-4">
+                        <img src="{% static 'images/logo3.webp' %}" alt="MiDoctor" class="h-8 w-auto mr-2">
+                        <span class="text-xl font-bold text-white">MiDoctor</span>
+                    </div>
+                    <p class="mb-4">Bringing healthcare to your fingertips with secure, convenient telemedicine solutions.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h3 class="text-white font-bold text-lg mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="hover:text-white transition">About Us</a></li>
+                        <li><a href="#" class="hover:text-white transition">Services</a></li>
+                        <li><a href="#" class="hover:text-white transition">Find a Doctor</a></li>
+                        <li><a href="#" class="hover:text-white transition">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition">FAQs</a></li>
+                    </ul>
+                </div>
+
+                <!-- Services -->
+                <div>
+                    <h3 class="text-white font-bold text-lg mb-4">Services</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="hover:text-white transition">Video Consultations</a></li>
+                        <li><a href="#" class="hover:text-white transition">E-Prescriptions</a></li>
+                        <li><a href="#" class="hover:text-white transition">Medical Records</a></li>
+                        <li><a href="#" class="hover:text-white transition">Lab Tests</a></li>
+                        <li><a href="#" class="hover:text-white transition">Mental Health</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div>
+                    <h3 class="text-white font-bold text-lg mb-4">Contact Us</h3>
+                    <address class="not-italic">
+                        <p class="mb-2"><i class="fas fa-map-marker-alt mr-2"></i> 123 Health St, Nairobi</p>
+                        <p class="mb-2"><i class="fas fa-phone-alt mr-2"></i> +254 742 497 6659</p>
+                        <p class="mb-4"><i class="fas fa-envelope mr-2"></i> support@midoctor.com</p>
+                    </address>
+                    <div class="relative">
+                        <input type="email" placeholder="Your email" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <button class="absolute right-2 top-2 text-indigo-400 hover:text-indigo-300">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-gray-800 my-8">
+
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-500 text-sm">&copy; {% now "Y" %} MiDoctor. All rights reserved.</p>
+                <div class="flex space-x-6 mt-4 md:mt-0">
+                    <a href="#" class="text-gray-500 hover:text-gray-300 text-sm">Privacy Policy</a>
+                    <a href="#" class="text-gray-500 hover:text-gray-300 text-sm">Terms of Service</a>
+                    <a href="#" class="text-gray-500 hover:text-gray-300 text-sm">HIPAA Compliance</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+    <script>
+        // Mobile Menu Toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('open');
+            mobileMenuButton.innerHTML = mobileMenu.classList.contains('open') ? 
+                '<i class="fas fa-times text-2xl"></i>' : 
+                '<i class="fas fa-bars text-2xl"></i>';
+        });
+
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+                mobileMenuButton.innerHTML = '<i class="fas fa-bars text-2xl"></i>';
+            });
+        });
+
+        // Navbar shadow on scroll
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            header.classList.toggle('shadow-md', window.scrollY > 10);
+        });
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,566 @@
+{% extends 'basepages/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Enhanced Hero Section -->
+<section class="relative overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-700 text-white py-24 md:py-32">
+    <!-- Decorative background elements -->
+    <div class="absolute inset-0 overflow-hidden opacity-10">
+        <div class="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-white mix-blend-soft-light animate-float"></div>
+        <div class="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full bg-white mix-blend-soft-light animate-float-delay"></div>
+    </div>
+
+    <div class="container mx-auto px-4 flex flex-col lg:flex-row items-center gap-12">
+        <!-- Text Content -->
+        <div class="lg:w-1/2 relative z-10">
+            <h1 class="text-4xl md:text-5xl font-bold leading-tight mb-6">
+                <span class="text-blue-200">Personalized</span> Healthcare<br>On Your Schedule
+            </h1>
+            <p class="text-xl text-blue-100 mb-8 max-w-lg">
+                Instant access to board-certified physicians via video, phone, or chat - available 24/7 from anywhere.
+            </p>
+            
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-10">
+                <a href="{% url 'users:register-page' %}" 
+                   class="bg-white text-indigo-700 px-8 py-4 rounded-lg font-semibold hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl text-center">
+                    Start Free Consultation
+                </a>
+                <a href="#" 
+                   class="border-2 border-white/50 text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/10 transition-all text-center">
+                    <i class="fas fa-play-circle mr-2"></i> How It Works
+                </a>
+            </div>
+            
+            <!-- Trust Indicators -->
+            <div class="flex flex-wrap items-center gap-6">
+                <div class="flex items-center">
+                    <div class="flex -space-x-3 mr-3">
+                        <img src="{% static 'images/patient2.jpeg' %}" class="w-10 h-10 rounded-full border-2 border-white" alt="Patient">
+                        <img src="{% static 'images/patient2.jpeg' %}" class="w-10 h-10 rounded-full border-2 border-white" alt="Patient">
+                        <img src="{% static 'images/patient2.jpeg' %}" class="w-10 h-10 rounded-full border-2 border-white" alt="Patient">
+                    </div>
+                    <span class="text-sm">5,000+ consultations today</span>
+                </div>
+                <div class="h-6 w-px bg-white/30 hidden sm:block"></div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex text-yellow-300">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </div>
+                    <span class="text-sm">4.9/5 (12,345 reviews)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Image -->
+        <div class="lg:w-1/2 relative mt-12 lg:mt-0">
+            <div class="relative max-w-xl mx-auto">
+                <!-- Main Image Container -->
+                <div class="relative overflow-hidden rounded-2xl shadow-2xl border-8 border-white/20">
+                    <img src="{% static 'images/hero.webp' %}" 
+                         alt="Doctor consultation" 
+                         class="w-full h-auto object-cover transition-transform duration-500 hover:scale-105">
+                    
+                    <!-- Doctor Availability Badge -->
+                    <div class="absolute top-4 right-4 bg-white/90 text-indigo-700 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm flex items-center">
+                        <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        Doctor Available Now
+                    </div>
+                </div>
+                
+                <!-- HIPAA Badge -->
+                <div class="absolute -bottom-4 -right-4 bg-white text-indigo-700 px-5 py-2 rounded-full shadow-lg font-bold flex items-center">
+                    <i class="fas fa-shield-alt text-purple-500 mr-2"></i>
+                    HIPAA Compliant
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Floating Chat Widget -->
+<div class="fixed bottom-8 right-8 z-50 flex flex-col items-end space-y-4">
+    <!-- WhatsApp Button -->
+    <a href="https://wa.me/2547424976659" target="_blank" 
+       class="bg-green-500 text-white p-4 rounded-full shadow-xl hover:bg-green-600 transition-all animate-bounce-slow"
+       title="Chat on WhatsApp">
+        <i class="fab fa-whatsapp text-2xl"></i>
+    </a>
+    
+    <!-- Chat Bot Button -->
+    <button id="chatbot-toggle" 
+            class="bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 transition-all"
+            title="Virtual Assistant">
+        <i class="fas fa-robot text-2xl"></i>
+    </button>
+    
+    <!-- Chat Bot Container (Hidden by default) -->
+    <div id="chatbot-container" class="hidden w-80 bg-white rounded-lg shadow-xl overflow-hidden">
+        <div class="bg-indigo-600 text-white p-4 flex justify-between items-center">
+            <h3 class="font-bold">MiDoctor Assistant</h3>
+            <button id="chatbot-close" class="text-white hover:text-indigo-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="h-64 p-4 overflow-y-auto" id="chatbot-messages">
+            <div class="flex mb-4">
+                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-2">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="bg-gray-100 rounded-lg p-3 max-w-xs">
+                    <p>Hello! I'm your virtual health assistant. How can I help you today?</p>
+                </div>
+            </div>
+        </div>
+        <div class="border-t p-4">
+            <div class="flex">
+                <input type="text" placeholder="Type your message..." 
+                       class="flex-grow border rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button class="bg-indigo-600 text-white px-4 py-2 rounded-r-lg hover:bg-indigo-700">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Our assistant can help with appointment booking and general questions.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Trust Bar -->
+<div class="bg-gray-50 py-6 border-b">
+    <div class="container mx-auto px-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="flex flex-col items-center text-center p-4 rounded-lg hover:bg-white transition-all">
+                <i class="fas fa-user-md text-blue-500 text-3xl mb-2"></i>
+                <h4 class="font-bold">100+ Specialists</h4>
+                <p class="text-sm text-gray-600">Across all medical fields</p>
+            </div>
+            <div class="flex flex-col items-center text-center p-4 rounded-lg hover:bg-white transition-all">
+                <i class="fas fa-clock text-orange-500 text-3xl mb-2"></i>
+                <h4 class="font-bold">24/7 Access</h4>
+                <p class="text-sm text-gray-600">Always available when you need us</p>
+            </div>
+            <div class="flex flex-col items-center text-center p-4 rounded-lg hover:bg-white transition-all">
+                <i class="fas fa-prescription-bottle-alt text-purple-500 text-3xl mb-2"></i>
+                <h4 class="font-bold">E-Prescriptions</h4>
+                <p class="text-sm text-gray-600">Sent directly to your pharmacy</p>
+            </div>
+            <div class="flex flex-col items-center text-center p-4 rounded-lg hover:bg-white transition-all">
+                <i class="fas fa-shield-alt text-green-500 text-3xl mb-2"></i>
+                <h4 class="font-bold">Secure Platform</h4>
+                <p class="text-sm text-gray-600">HIPAA compliant & encrypted</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- (Services, How It Works, Testimonials) -->
+<!-- Services Section (Card Grid with Hover Effects) -->
+<section id="services" class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <span class="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 rounded-full mb-4 font-medium">
+                Our Services
+            </span>
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                Comprehensive <span class="text-indigo-600">Healthcare</span> Solutions
+            </h2>
+            <p class="text-gray-600 text-lg">
+                From routine checkups to specialized care, we've got you covered with our range of services.
+            </p>
+        </div>
+        
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Service Card 1 -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:border-indigo-100 hover:shadow-xl transition-all duration-300 group">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-indigo-50 rounded-lg flex items-center justify-center mb-6 group-hover:bg-indigo-100 transition-colors">
+                        <i class="fas fa-video text-indigo-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Virtual Consultations</h3>
+                    <p class="text-gray-600 mb-4">
+                        Face-to-face video visits with board-certified doctors from the comfort of your home.
+                    </p>
+                    <a href="{% url 'users:doctor-page' %}" class="text-indigo-600 font-medium inline-flex items-center group-hover:text-indigo-700 transition-colors">
+                        Learn more <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Service Card 2 -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:border-indigo-100 hover:shadow-xl transition-all duration-300 group">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-blue-50 rounded-lg flex items-center justify-center mb-6 group-hover:bg-blue-100 transition-colors">
+                        <i class="fas fa-pills text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Online Pharmacy</h3>
+                    <p class="text-gray-600 mb-4">
+                        Get medications delivered to your door with our fast, reliable pharmacy service.
+                    </p>
+                    <a href="{% url 'pharmacy:pharmacy' %}" class="text-blue-600 font-medium inline-flex items-center group-hover:text-blue-700 transition-colors">
+                        Learn more <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Service Card 3 -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:border-indigo-100 hover:shadow-xl transition-all duration-300 group">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center mb-6 group-hover:bg-purple-100 transition-colors">
+                        <i class="fas fa-flask text-purple-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Lab Tests</h3>
+                    <p class="text-gray-600 mb-4">
+                        Book tests online and get results digitally within 24-48 hours in most cases.
+                    </p>
+                    <a href="#" class="text-purple-600 font-medium inline-flex items-center group-hover:text-purple-700 transition-colors">
+                        Learn more <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Service Card 4 -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:border-indigo-100 hover:shadow-xl transition-all duration-300 group">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-green-50 rounded-lg flex items-center justify-center mb-6 group-hover:bg-green-100 transition-colors">
+                        <i class="fas fa-hospital text-green-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Hospital Management</h3>
+                    <p class="text-gray-600 mb-4">
+                        Comprehensive solutions for hospitals to manage patient care efficiently.
+                    </p>
+                    <a href="#" class="text-green-600 font-medium inline-flex items-center group-hover:text-green-700 transition-colors">
+                        Learn more <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Service Card 5 -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:border-indigo-100 hover:shadow-xl transition-all duration-300 group">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center mb-6 group-hover:bg-red-100 transition-colors">
+                        <i class="fas fa-comment-medical text-red-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Secure Messaging</h3>
+                    <p class="text-gray-600 mb-4">
+                        Private chat with your doctor for follow-ups and non-urgent questions.
+                    </p>
+                    <a href="{% url 'messaging:chat-page' %}" class="text-red-600 font-medium inline-flex items-center group-hover:text-red-700 transition-colors">
+                        Learn more <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Service Card 6 -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:border-indigo-100 hover:shadow-xl transition-all duration-300 group">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-yellow-50 rounded-lg flex items-center justify-center mb-6 group-hover:bg-yellow-100 transition-colors">
+                        <i class="fas fa-file-medical text-yellow-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Health Records</h3>
+                    <p class="text-gray-600 mb-4">
+                        Centralized, secure storage for all your medical history and documents.
+                    </p>
+                    <a href="#" class="text-yellow-600 font-medium inline-flex items-center group-hover:text-yellow-700 transition-colors">
+                        Learn more <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="py-20 bg-gray-50">
+    <div class="container mx-auto px-4">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <span class="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 rounded-full mb-4 font-medium">
+                Simple Process
+            </span>
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                How MiDoctor <span class="text-indigo-600">Works</span>
+            </h2>
+            <p class="text-gray-600 text-lg">
+                Get quality healthcare in just a few easy steps
+            </p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-8">
+            <!-- Step 1 -->
+            <div class="bg-white p-8 rounded-xl shadow-md text-center relative">
+                <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-indigo-700 font-bold text-2xl">1</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Create Your Account</h3>
+                <p class="text-gray-600">
+                    Sign up in minutes with your basic information and medical history.
+                </p>
+                <div class="absolute -right-6 top-1/2 transform -translate-y-1/2 hidden md:block">
+                    <i class="fas fa-arrow-right text-gray-300 text-3xl"></i>
+                </div>
+            </div>
+            
+            <!-- Step 2 -->
+            <div class="bg-white p-8 rounded-xl shadow-md text-center relative">
+                <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-indigo-700 font-bold text-2xl">2</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Book Your Visit</h3>
+                <p class="text-gray-600">
+                    Choose your doctor and schedule an immediate or future appointment.
+                </p>
+                <div class="absolute -right-6 top-1/2 transform -translate-y-1/2 hidden md:block">
+                    <i class="fas fa-arrow-right text-gray-300 text-3xl"></i>
+                </div>
+            </div>
+            
+            <!-- Step 3 -->
+            <div class="bg-white p-8 rounded-xl shadow-md text-center">
+                <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-indigo-700 font-bold text-2xl">3</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Connect & Get Care</h3>
+                <p class="text-gray-600">
+                    Have your visit via video, phone, or chat and receive after-visit summary.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section (Modern Carousel Style) -->
+<section class="py-20 bg-indigo-600 text-white">
+    <div class="container mx-auto px-4">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <span class="inline-block px-4 py-1 bg-white/20 rounded-full mb-4 font-medium">
+                Patient Stories
+            </span>
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                Trusted by <span class="text-indigo-200">Thousands</span>
+            </h2>
+            <p class="text-indigo-100 text-lg">
+                Hear what our patients say about their MiDoctor experience
+            </p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-8">
+            <!-- Testimonial 1 -->
+            <div class="bg-white/10 p-8 rounded-xl backdrop-blur-sm hover:bg-white/20 transition-all duration-300">
+                <div class="flex items-center mb-4">
+                    <img src="{% static 'images/patient1.jpeg' %}" class="w-12 h-12 rounded-full mr-4 border-2 border-white" alt="Patient">
+                    <div>
+                        <h4 class="font-bold">Dickson Ombati</h4>
+                        <div class="flex text-yellow-400">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                </div>
+                <p class="italic text-indigo-100">
+                    "I was able to consult a specialist within 15 minutes during an emergency. The doctor was incredibly knowledgeable and prescribed exactly what I needed."
+                </p>
+            </div>
+            
+            <!-- Testimonial 2 -->
+            <div class="bg-white/10 p-8 rounded-xl backdrop-blur-sm hover:bg-white/20 transition-all duration-300">
+                <div class="flex items-center mb-4">
+                    <img src="{% static 'images/patient2.jpeg' %}" class="w-12 h-12 rounded-full mr-4 border-2 border-white" alt="Patient">
+                    <div>
+                        <h4 class="font-bold">Eugine Sifuna</h4>
+                        <div class="flex text-yellow-400">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                </div>
+                <p class="italic text-indigo-100">
+                    "The online pharmacy saved me a 2-hour trip to town. My medications arrived the same day with clear instructions. Game changer for chronic conditions!"
+                </p>
+            </div>
+            
+            <!-- Testimonial 3 -->
+            <div class="bg-white/10 p-8 rounded-xl backdrop-blur-sm hover:bg-white/20 transition-all duration-300">
+                <div class="flex items-center mb-4">
+                    <img src="{% static 'images/patient1.jpeg' %}" class="w-12 h-12 rounded-full mr-4 border-2 border-white" alt="Patient">
+                    <div>
+                        <h4 class="font-bold">Lucy Odhiambo</h4>
+                        <div class="flex text-yellow-400">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                        </div>
+                    </div>
+                </div>
+                <p class="italic text-indigo-100">
+                    "As a busy mom, being able to get pediatric advice without dragging my sick kids to a waiting room is priceless. The doctors are so patient with children."
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section (With Stats) -->
+<section class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 md:p-12 shadow-xl overflow-hidden relative">
+            <div class="absolute top-0 left-0 w-full h-full opacity-10">
+                <div class="absolute top-1/4 -left-20 w-64 h-64 rounded-full bg-white"></div>
+                <div class="absolute bottom-1/4 -right-20 w-80 h-80 rounded-full bg-white"></div>
+            </div>
+            
+            <div class="relative z-10 grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+                        Ready to experience better healthcare?
+                    </h2>
+                    <p class="text-indigo-100 text-lg mb-6">
+                        Join thousands of patients who've transformed their healthcare experience.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="{% url 'users:register-page' %}" 
+                           class="bg-white text-indigo-700 px-8 py-4 rounded-lg shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-300 font-semibold text-center">
+                            Sign Up Free
+                        </a>
+                        <a href="{% url 'users:doctor-page' %}" 
+                           class="border-2 border-white/50 px-8 py-4 rounded-lg hover:bg-white/10 hover:border-white transition-all duration-300 font-semibold text-white text-center">
+                            Find a Doctor
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm text-center">
+                        <div class="text-3xl font-bold text-white mb-1">98%</div>
+                        <div class="text-indigo-100 text-sm">Patient Satisfaction</div>
+                    </div>
+                    <div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm text-center">
+                        <div class="text-3xl font-bold text-white mb-1">24/7</div>
+                        <div class="text-indigo-100 text-sm">Availability</div>
+                    </div>
+                    <div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm text-center">
+                        <div class="text-3xl font-bold text-white mb-1">15min</div>
+                        <div class="text-indigo-100 text-sm">Average Wait Time</div>
+                    </div>
+                    <div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm text-center">
+                        <div class="text-3xl font-bold text-white mb-1">100+</div>
+                        <div class="text-indigo-100 text-sm">Specialties</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Specialties Section (Optional) -->
+<section class="py-16 bg-gray-50">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold mb-4">Our Medical Specialties</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                Connect with experts across various medical fields
+            </p>
+        </div>
+        
+        <div class="flex flex-wrap justify-center gap-3">
+            <span class="px-4 py-2 bg-white rounded-full shadow-sm text-gray-700 hover:bg-indigo-600 hover:text-white transition-all">Primary Care</span>
+            <span class="px-4 py-2 bg-white rounded-full shadow-sm text-gray-700 hover:bg-indigo-600 hover:text-white transition-all">Pediatrics</span>
+            <span class="px-4 py-2 bg-white rounded-full shadow-sm text-gray-700 hover:bg-indigo-600 hover:text-white transition-all">Mental Health</span>
+            <span class="px-4 py-2 bg-white rounded-full shadow-sm text-gray-700 hover:bg-indigo-600 hover:text-white transition-all">Dermatology</span>
+            <span class="px-4 py-2 bg-white rounded-full shadow-sm text-gray-700 hover:bg-indigo-600 hover:text-white transition-all">Cardiology</span>
+            <span class="px-4 py-2 bg-white rounded-full shadow-sm text-gray-700 hover:bg-indigo-600 hover:text-white transition-all">Neurology</span>
+            <span class="px-4 py-2 bg-white rounded-full shadow-sm text-gray-700 hover:bg-indigo-600 hover:text-white transition-all">Endocrinology</span>
+            <span class="px-4 py-2 bg-white rounded-full shadow-sm text-gray-700 hover:bg-indigo-600 hover:text-white transition-all">Gynecology</span>
+        </div>
+    </div>
+</section>
+<!-- ... -->
+
+<style>
+    /* Floating animation */
+    @keyframes float {
+        0%, 100% { transform: translateY(0) translateX(0); }
+        50% { transform: translateY(-20px) translateX(10px); }
+    }
+    .animate-float {
+        animation: float 8s ease-in-out infinite;
+    }
+    .animate-float-delay {
+        animation: float 8s ease-in-out infinite 2s;
+    }
+    
+    /* Bounce animation for WhatsApp */
+    @keyframes bounce-slow {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .animate-bounce-slow {
+        animation: bounce-slow 3s ease-in-out infinite;
+    }
+    
+    /* Smooth transitions */
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+</style>
+
+<script>
+    // Chat bot toggle functionality
+    const chatbotToggle = document.getElementById('chatbot-toggle');
+    const chatbotContainer = document.getElementById('chatbot-container');
+    const chatbotClose = document.getElementById('chatbot-close');
+    
+    chatbotToggle.addEventListener('click', () => {
+        chatbotContainer.classList.toggle('hidden');
+    });
+    
+    chatbotClose.addEventListener('click', () => {
+        chatbotContainer.classList.add('hidden');
+    });
+    
+    // Simple chat bot functionality (example)
+    document.querySelector('#chatbot-container button').addEventListener('click', () => {
+        const input = document.querySelector('#chatbot-container input');
+        const messages = document.getElementById('chatbot-messages');
+        
+        if (input.value.trim() !== '') {
+            // Add user message
+            messages.innerHTML += `
+                <div class="flex justify-end mb-4">
+                    <div class="bg-indigo-600 text-white rounded-lg p-3 max-w-xs">
+                        <p>${input.value}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Add bot response (simplified)
+            setTimeout(() => {
+                messages.innerHTML += `
+                    <div class="flex mb-4">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-2">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="bg-gray-100 rounded-lg p-3 max-w-xs">
+                            <p>Thanks for your message! For medical advice, please book a consultation with one of our doctors.</p>
+                        </div>
+                    </div>
+                `;
+                messages.scrollTop = messages.scrollHeight;
+            }, 500);
+            
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+        }
+    });
+</script>
+{% endblock %}

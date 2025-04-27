@@ -1,0 +1,12 @@
+{% extends "basepages/base.html" %}
+{% load static tailwind_tags %}
+
+{% block content %}
+    <div class="flex items-center justify-center h-screen">
+        <div class="bg-white shadow-lg rounded-lg p-6 max-w-md w-full text-center">
+            <h2 class="text-2xl font-bold text-gray-800">Email Verification Sent</h2>
+            <p class="mt-4 text-gray-600">Please check your email and click on the verification link to activate your account.</p>
+            <p class="mt-2 text-gray-500">Didn't receive the email? <a href="{% url 'account_email' %}" class="text-blue-500 hover:underline">Resend Verification</a></p>
+        </div>
+    </div>
+{% endblock %}

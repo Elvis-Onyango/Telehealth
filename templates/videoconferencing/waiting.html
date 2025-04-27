@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waiting Room</title>
+    <script>
+        function checkMeetingStart() {
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    if (!html.includes("waiting-message")) {
+                        window.location.reload();
+                    }
+                });
+        }
+        setInterval(checkMeetingStart, 5000); // Check every 5 seconds
+    </script>
+</head>
+<body>
+    <h2>Meeting: {{ meeting.title_of_meeting }}</h2>
+    <p id="waiting-message">This meeting has not started yet. Please wait...</p>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{% extends "basepages/base.html" %}
+{% load static %}
+{% load static tailwind_tags %}
+
+{% block content %}
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+  <!-- Booking Modal (Centered) -->
+<div id="modal-backdrop" class="hidden fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
+  <div id="booking-modal" class="w-full max-w-md bg-white p-6 rounded-lg shadow-lg transition-all duration-300 transform scale-90 opacity-0">
+    <h2 class="text-xl font-bold mb-4 text-gray-800 text-center"><i class="fas fa-calendar-check"></i> Book an Appointment</h2>
+
+    <div class="space-y-4">
+      <label class="block text-sm font-medium text-gray-700"><i class="fas fa-user"></i> Patient Name</label>
+      <input type="text" id="patient-name" disabled class="w-full p-2 border rounded bg-gray-100">
+
+      <label class="block text-sm font-medium text-gray-700"><i class="fas fa-user-md"></i> Doctor</label>
+      <input type="text" id="doctor-name" disabled class="w-full p-2 border rounded bg-gray-100">
+
+      <label class="block text-sm font-medium text-gray-700"><i class="fas fa-hospital"></i> Hospital</label>
+      <input type="text" id="hospital-name" disabled class="w-full p-2 border rounded bg-gray-100">
+
+      <label class="block text-sm font-medium text-gray-700"><i class="fas fa-calendar-alt"></i> Date</label>
+      <input type="date" id="appointment-date" class="w-full p-2 border rounded">
+
+      <label class="block text-sm font-medium text-gray-700"><i class="fas fa-clock"></i> Time</label>
+      <input type="time" id="appointment-time" class="w-full p-2 border rounded">
+    </div>
+
+    <button onclick="submitBooking()" id="confirm-btn" class="w-full bg-blue-600 text-white p-2 rounded mt-4 hover:bg-blue-700 flex items-center justify-center">
+      <span id="confirm-text"><i class="fas fa-check"></i> Confirm Booking</span>
+      <span id="loading-spinner" class="hidden ml-2">
+        <i class="fas fa-spinner fa-spin"></i>
+      </span>
+    </button>
+
+    <button onclick="closeModal()" class="w-full bg-gray-500 text-white p-2 rounded mt-2 hover:bg-gray-600">
+      <i class="fas fa-times"></i> Cancel
+    </button>
+  </div>
+</div>
+
+</body>
+{% endblock %}

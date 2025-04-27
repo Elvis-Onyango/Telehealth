@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIVE MEETING PAGE</title>
+</head>
+<body>
+    <h2>Title: {{ meeting.title_of_meeting }}</h2>
+    <div id="meet"></div>
+
+    {% block script %}
+    <script src='https://meet.jit.si/external_api.js'></script>
+    <script>
+        const domain = 'meet.jit.si';
+        const options = {
+            roomName: '{{ meeting.meeting_id }}',  // Dynamic meeting ID from Django
+            width: 1000,
+            height: 600,
+            parentNode: document.querySelector('#meet'),
+            lang: 'en',  // Set language to English
+            configOverwrite: {
+                startWithAudioMuted: true,
+                startWithVideoMuted: true,
+                prejoinPageEnabled: true,
+                enableLobbyChat: true,
+                localRecording: true,
+                disableInitialGUM: true,
+            },
+            interfaceConfigOverwrite: {
+                SHOW_CHROME_EXTENSION_BANNER: false,
+                TOOLBAR_ALWAYS_VISIBLE: true,
+                SETTINGS_SECTIONS: ['devices', 'language'],
+                SHOW_POWERED_BY: false,
+            },
+            TOOLBAR_BUTTONS: [
+                "microphone", "camera", "desktop", "hangup", "chat", 
+                "raisehand", "participants-pane", "tileview", 
+                "toggle-camera", "invite", "videoquality", "livestreaming", 
+                "mute-everyone", "mute-video-everyone", "sharedvideo", 
+                "shareaudio", "select-background", "stats", "settings", "filmstrip"
+            ],
+        };
+        const api = new JitsiMeetExternalAPI(domain, options);
+    </script>
+    {% endblock %}
+</body>
+</html>
