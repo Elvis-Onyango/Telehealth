@@ -84,7 +84,7 @@ export const responses = {
   // === COVID/FLU ===
   'covid': 'COVID symptoms: isolate if positive, rest/hydrate. Seek care if trouble breathing or oxygen levels drop below 92%.',
   'flu': 'Flu care: rest, fluids, OTC meds for symptoms. High-risk patients should contact doctor about antivirals.',
-     // === Appointments ===
+  // === Appointments ===
   'appointment': 'You can book appointments through our portal. Would you like to:\n1. Book a new appointment\n2. Check existing appointments\n3. Reschedule an appointment\nPlease reply with the number of your choice.',
   'need doctor': 'I can help you find available doctors. Please specify:\n- Preferred specialty (if any)\n- Urgency (urgent/routine)\n- Preferred appointment type (video/in-person)',
   'book doctor': 'Let\'s schedule your visit. First, please specify:\n1. Doctor\'s name/specialty\n2. Preferred date range\n3. Video or in-person visit',
@@ -109,7 +109,7 @@ export const responses = {
   // === Hospital Information ===
   'hospital': 'Our hospital locations include:\n1. Main Campus (Downtown)\n2. Westside Medical Center\n3. Northside Clinic\nWhich location are you interested in?',
   'hospital hours': 'General hospital hours:\n- Weekdays: 7am-9pm\n- Weekends: 8am-5pm\nEmergency: 24/7\nNeed specific department hours?',
-  'hospital contact': 'Main hospital contact:\n📞 (555) 123-4567\n📧 info@telehealth.com\n📍 123 Medical Center Dr\nNeed a specific department?',
+  'hospital contact': 'Main hospital contact:\n📞 (254) 123-4567\n📧 info@telehealth.com\n📍 123 Medical Center Dr\nNeed a specific department?',
   // === Default ===
   'default': 'I want to understand your concern better. Could you describe more about what you\'re experiencing? If this is urgent, please say "emergency".'
 };

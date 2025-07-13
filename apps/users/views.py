@@ -20,12 +20,12 @@ import json
  
 
 from apps.videoconferencing.models import VideoCall
-from .models import User, DoctorProfile, PatientProfile,Weekday, Message
+from .models import User, DoctorProfile, PatientProfile,Weekday
 from apps.appointments.models import Appointment
 from .serializers import (
     RegisterSerializer, LoginSerializer,
     UserSerializer, DoctorProfileSerializer,
-    PatientProfileSerializer,WeekdaySerializer,MessageSerializer
+    PatientProfileSerializer,WeekdaySerializer,  DoctorAvailabilityCreateSerializer
 )
 from .permissions import IsAdmin, IsDoctor, IsPatient
 from rest_framework import viewsets, status
@@ -48,11 +48,13 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]  # Open for new users
 
 
+
+
 class LoginView(APIView):
     """
-    API for user login - Returns JWT token and user role.
+    API for user login - Returns JWT token, sets session login, and user role.
     """
-    permission_classes = [AllowAny]  # Anyone can access
+    permission_classes = [AllowAny]
 
     def post(self, request):
         username = request.data.get("username")
@@ -60,12 +62,15 @@ class LoginView(APIView):
 
         user = authenticate(username=username, password=password)
         if user:
+            # Set Django session login so @login_required works
+            login(request, user)
+
+            # JWT generation
             refresh = RefreshToken.for_user(user)
 
-            # Get role directly from the user model
-            role = getattr(user, "role", "user")  # Defaults to "user" if role is missing
+            # Role logic
+            role = getattr(user, "role", "user")
 
-            # Check if profile is required for doctors and patients
             profile_required = False
             if role == "doctor" and not DoctorProfile.objects.filter(user=user).exists():
                 profile_required = True
@@ -76,11 +81,12 @@ class LoginView(APIView):
                 "message": "Login successful",
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
-                "role": role,  # Correctly assigned role
-                "profile_required": profile_required,  # Helps frontend redirect
+                "role": role,
+                "profile_required": profile_required,
             })
 
         return Response({"message": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
@@ -218,6 +224,12 @@ class DoctorProfileCreationView(generics.CreateAPIView):
         # Set the user before saving the serializer
         serializer.save(user=self.request.user)
 
+class AddDoctorAvailabilityView(generics.CreateAPIView):
+    serializer_class = DoctorAvailabilityCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return DoctorAvailability.objects.filter(doctor=self.request.user.doctor_profile)
 
 
 
@@ -241,68 +253,56 @@ class WeekdayListCreateView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]  
 
 
-#===============================================
-#Doctor patient Messaging
-#================================================
-from rest_framework.generics import ListCreateAPIView, ListAPIView
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q
 
-from .models import Message, User
-from .serializers import MessageSerializer, UserSerializer
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import DoctorProfile, Weekday
+from .forms import DoctorProfileUpdateForm, UserUpdateForm
+from apps.appointments.models import Hospital
 
+@login_required
+def doctor_profile_view(request):
+    try:
+        doctor_profile = request.user.doctor_profile
+    except DoctorProfile.DoesNotExist:
+        messages.info(request, 'Please complete your doctor profile first.')
+    
+    context = {
+        'doctor_profile': doctor_profile,
+        'available_days': doctor_profile.available_days.all(),
+        'hospital_list': Hospital.objects.all(),
+        'weekdays': Weekday.objects.all()
+    }
+    return render(request, 'users/profile_view.html', context)
 
-class MessageListCreateView(ListCreateAPIView):
-    serializer_class = MessageSerializer
-    permission_classes = [IsAuthenticated]
+@login_required
+def doctor_profile_update(request):
+    try:
+        doctor_profile = request.user.doctor_profile
+    except DoctorProfile.DoesNotExist:
+        messages.info(request, 'Please complete your doctor profile first.')
+        #return redirect('complete_doctor_profile')  # exit if profile not found
 
-    def get_queryset(self):
-        user = self.request.user
-        return Message.objects.filter(
-            Q(sender=user) | Q(recipient=user)
-        ).order_by('-timestamp').select_related('sender', 'recipient')
+    if request.method == 'POST':
+        user_form = UserUpdateForm(request.POST, request.FILES, instance=request.user)
+        profile_form = DoctorProfileUpdateForm(request.POST, request.FILES, instance=doctor_profile)
 
-    def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile = profile_form.save(commit=False)
+            profile.save()
+            profile_form.save_m2m()
+            messages.success(request, 'Your profile has been updated!')
+            return redirect('users:doctor_profile_view')
+    else:
+        user_form = UserUpdateForm(instance=request.user)
+        profile_form = DoctorProfileUpdateForm(instance=doctor_profile)
 
-
-class ConversationListView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        partners = User.objects.filter(
-            Q(sent_messages__recipient=user) | 
-            Q(received_messages__sender=user)
-        ).distinct()
-        return Response(UserSerializer(partners, many=True).data)
-
-
-class ConversationDetailView(ListAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = MessageSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        other_user_id = self.kwargs['user_id']
-        return Message.objects.filter(
-            Q(sender=user, recipient_id=other_user_id) |
-            Q(sender_id=other_user_id, recipient=user)
-        ).order_by('timestamp')
-
-    def list(self, request, *args, **kwargs):
-        # Mark all unread messages as read
-        Message.objects.filter(
-            recipient=request.user,
-            sender_id=kwargs['user_id'],
-            is_read=False
-        ).update(is_read=True)
-        return super().list(request, *args, **kwargs)
-
-
-
-
-
-
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'hospital_list': Hospital.objects.all(),
+        'weekdays': Weekday.objects.all()
+    }
+    return render(request, 'users/profile_update.html', context)

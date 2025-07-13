@@ -5,7 +5,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError
 from urllib.parse import parse_qs
 from rest_framework_simplejwt.tokens import AccessToken
-from .models import Conversation, Message
+#from .models import Conversation, Message
 from apps.users.models import User
 
 class ChatConsumer(AsyncWebsocketConsumer):

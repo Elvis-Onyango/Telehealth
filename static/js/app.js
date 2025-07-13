@@ -20,13 +20,13 @@ function connectToChat(room_name) {
     chatSocket = new WebSocket(wsUrl);
 
     chatSocket.onopen = function () {
-        console.log("✅ WebSocket connected successfully.");
+        console.log("WebSocket connected successfully.");
         retryCount = 0; // Reset retry count
     };
 
     chatSocket.onmessage = function (event) {
         const data = JSON.parse(event.data);
-        console.log("📩 New message received:", data);
+        console.log(" New message received:", data);
 
         if (data.type === "chat_message") {
             displayMessage(data.message, data.sender_id);
@@ -34,24 +34,24 @@ function connectToChat(room_name) {
     };
 
     chatSocket.onclose = function (event) {
-        console.warn("❌ WebSocket closed:", event.reason);
+        console.warn("WebSocket closed:", event.reason);
         
         if (retryCount < maxRetries) {
             retryCount++;
-            console.log(`🔄 Retrying WebSocket connection (${retryCount}/${maxRetries})...`);
+            console.log(` Retrying WebSocket connection (${retryCount}/${maxRetries})...`);
             setTimeout(() => connectToChat(room_name), 5000);
         }
     };
 
     chatSocket.onerror = function (error) {
-        console.error("⚠️ WebSocket error:", error);
+        console.error(" WebSocket error:", error);
     };
 }
 
 // Send message
 function sendMessage(message, sender_id) {
     if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
-        console.error("🚫 WebSocket is not open. Cannot send message.");
+        console.error(" WebSocket is not open. Cannot send message.");
         return;
     }
 
@@ -91,6 +91,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const room_name = roomNameElement.dataset.roomName;
         connectToChat(room_name);
     } else {
-        console.error("⚠️ Room name element not found.");
+        console.error(" Room name element not found.");
     }
 });

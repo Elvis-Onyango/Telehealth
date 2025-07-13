@@ -22,3 +22,35 @@ class CustomLoginForm(LoginForm):
         phone_number = cleaned_data.get("phone_number")
         # Add custom validation for phone number if needed
         return cleaned_data
+
+
+from django import forms
+from .models import DoctorProfile,User,Weekday
+
+
+class UserUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'phone', 'gender', 'profile_picture']
+        widgets = {
+            'phone': forms.TextInput(attrs={'placeholder': '+1234567890'}),
+            'gender': forms.Select(choices=[('', 'Select gender'), ('male', 'Male'), ('female', 'Female'), ('other', 'Other')])
+        }
+
+class DoctorProfileUpdateForm(forms.ModelForm):
+    available_days = forms.ModelMultipleChoiceField(
+        queryset=Weekday.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+    
+    class Meta:
+        model = DoctorProfile
+        fields = ['specialization', 'hospital', 'available_days', 'consultation_fee', 
+                 'years_of_experience', 'license_number', 'certifications', 'profile_picture']
+        widgets = {
+            'consultation_fee': forms.NumberInput(attrs={'step': '100'}),
+            'years_of_experience': forms.NumberInput(attrs={'min': '2'}),
+            'license_number': forms.TextInput(attrs={'placeholder': 'Medical license number'}),
+        }
+

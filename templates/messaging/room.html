@@ -1,0 +1,139 @@
+{% extends 'basepages/base.html' %}
+
+{% block content %}
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-1/3 border-r">
+        <!-- Same as home.html -->
+    </div>
+    
+    <!-- Chat Area -->
+    <div class="flex-1 flex flex-col">
+        <!-- Header -->
+        <div class="p-4 border-b flex items-center">
+            <div class="relative">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                    {{ other_user.first_name|first }}{{ other_user.last_name|first }}
+                </div>
+                {% if other_user.status.online %}
+                <div class="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white"></div>
+                {% endif %}
+            </div>
+            <div>
+                <h2 class="font-medium">{{ other_user.get_full_name }}</h2>
+                <p class="text-xs text-gray-500">
+                    {% if other_user.status.online %}Online{% else %}Offline{% endif %}
+                </p>
+            </div>
+        </div>
+        
+        <!-- Messages -->
+        <div class="flex-1 overflow-y-auto p-4 bg-gray-50">
+            {% for message in messages %}
+            <div class="mb-4 {% if message.sender == request.user %}text-right{% else %}text-left{% endif %}">
+                <div class="inline-block max-w-xs px-4 py-2 rounded-lg 
+                    {% if message.sender == request.user %}bg-blue-500 text-white{% else %}bg-white border{% endif %}">
+                    {% if message.message_type == 'image' %}
+                        <img src="{{ message.file.url }}" class="max-h-64 rounded">
+                    {% elif message.message_type == 'video' %}
+                        <video controls class="max-h-64 rounded">
+                            <source src="{{ message.video.url }}">
+                        </video>
+                    {% elif message.message_type == 'file' %}
+                        <a href="{{ message.file.url }}" class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                            </svg>
+                            Download File
+                        </a>
+                    {% else %}
+                        {{ message.content }}
+                    {% endif %}
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ message.get_formatted_time }}
+                    {% if message.sender == request.user %}
+                        {% if message.is_read %}✓✓{% else %}✓{% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Message Input -->
+        <div class="p-4 border-t bg-white">
+            <form id="message-form" enctype="multipart/form-data">
+                <input type="hidden" name="recipient_id" value="{{ other_user.id }}">
+                <div class="flex">
+                    <input type="text" name="content" placeholder="Type a message..." 
+                           class="flex-1 border rounded-l-lg px-4 py-2 focus:outline-none">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-r-lg">
+                        Send
+                    </button>
+                </div>
+                <div class="flex mt-2 space-x-2">
+                    <label class="cursor-pointer bg-gray-100 px-3 py-1 rounded-lg">
+                        <input type="file" name="file" class="hidden" accept="image/*">
+                        <span>Image</span>
+                    </label>
+                    <label class="cursor-pointer bg-gray-100 px-3 py-1 rounded-lg">
+                        <input type="file" name="file" class="hidden" accept="video/*">
+                        <span>Video</span>
+                    </label>
+                    <label class="cursor-pointer bg-gray-100 px-3 py-1 rounded-lg">
+                        <input type="file" name="file" class="hidden">
+                        <span>File</span>
+                    </label>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('message-form').onsubmit = async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch('/send-message/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        if (response.ok) {
+            this.reset();
+            window.location.reload(); // Simple refresh for demo
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+};
+
+// Update online status when window gains/loses focus
+window.addEventListener('focus', () => {
+    fetch('/update-status/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({online: true})
+    });
+});
+
+window.addEventListener('blur', () => {
+    fetch('/update-status/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({online: false})
+    });
+});
+</script>
+{% endblock %}

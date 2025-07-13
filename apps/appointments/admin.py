@@ -15,8 +15,14 @@ class AppointmentAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
     list_editable = ("status",)
 
+
 @admin.register(Billing)
 class BillingAdmin(admin.ModelAdmin):
-    list_display = ("appointment", "total_fee", "paid", "payment_method", "payment_date")
-    list_filter = ("paid", "payment_method")
-    search_fields = ("appointment__patient__username", "appointment__doctor__user__username")
+    list_display = ("appointment", "total_fee", "is_paid", "payment_method", "payment_date")
+    list_filter = ("payment_status", "payment_method")
+    search_fields = ("appointment__patient__user__username", "appointment__doctor__user__username")
+
+    @admin.display(boolean=True, ordering="payment_status", description="Paid")
+    def is_paid(self, obj):
+        return obj.payment_status == "paid"
+

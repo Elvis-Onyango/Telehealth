@@ -2,6 +2,7 @@ from django.db import models
 from apps.users.models import User, DoctorProfile, PatientProfile
 from apps.appointments.models import Appointment
 from config.utils import AESEncryption
+import json
 
 aes = AESEncryption()
 
@@ -53,8 +54,9 @@ class Prescription(models.Model):
         Decrypt prescription for authorized users.
         """
         try:
-            return aes.decrypt(self.encrypted_prescription)  # Decrypt only once
-        except Exception:
+            decrypted = aes.decrypt(self.encrypted_prescription)
+            return json.loads(decrypted)  # Decrypt only once
+        except Exception as e:
             return "Decryption Failed"  # Handle decryption errors properly
 
     def __str__(self):

@@ -9,7 +9,8 @@ from .views import (
     DoctorListView, PatientProfileCreationView,
     DisplayPatientFormView, DoctorProfileCreationView,
     DisplayDoctorFormView, WeekdayListCreateView,
-    MessageListCreateView, ConversationListView, ConversationDetailView
+    PatientDoctorsView,doctor_profile_view, doctor_profile_update
+   
 )
 
 app_name = 'users'
@@ -44,6 +45,7 @@ urlpatterns = [
     # Patient Related Endpoints
     # --------------------------
     path('patient/profile/', PatientProfileView.as_view(), name='patient-profile'),
+    path('patient/doctor',PatientDoctorsView.as_view(), name = 'patient-doctor' ),
     path('patient/create/', PatientProfileCreationView.as_view(), name='patient-create-profile'),
     path('patient-profile-create/', DisplayPatientFormView.as_view(), name='patient-profile-create'),
     path('patient-dashboard/', PatientDashboardPageView.as_view(), name='patient-dashboard'),
@@ -52,13 +54,13 @@ urlpatterns = [
     # Weekday Endpoints
     # --------------------------
     path('week/', WeekdayListCreateView.as_view(), name='week'),
-    
-    # --------------------------
-    # Messaging Endpoints
-    # --------------------------
-    path('messages/', MessageListCreateView.as_view(), name='message-list'),
-    path('messages/conversations/', ConversationListView.as_view(), name='conversation-list'),
-    path('messages/conversations/<int:user_id>/', ConversationDetailView.as_view(), name='conversation-detail'),
+    path('doctor/profile_view/', doctor_profile_view, name='doctor_profile_view'),
+    path('doctor/profile/update/', doctor_profile_update, name='doctor_profile_update'),    
+
+
     
 
 ]
+
+
+

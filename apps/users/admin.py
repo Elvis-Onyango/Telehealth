@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, DoctorProfile, PatientProfile, Weekday, Message
+from .models import User, DoctorProfile, PatientProfile, Weekday
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -64,7 +64,7 @@ class PatientProfileAdmin(admin.ModelAdmin):
 
 #=======================messaging===============================================
 
-@admin.register(Message)
+
 class MessageAdmin(admin.ModelAdmin):
     list_display = (
         'message_preview',

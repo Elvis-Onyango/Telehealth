@@ -2,9 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import User, DoctorProfile, PatientProfile, Weekday,Message
+from .models import User, DoctorProfile, PatientProfile, Weekday, DoctorAvailability 
 from apps.appointments.serializers import HospitalSerializer
-
+from datetime import datetime, timedelta
 from apps.prescriptions.serializers import MedicalHistorySerializer, MedicalReportSerializer
 
 
@@ -12,6 +12,24 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone', 'address', 'gender', 'role', 'profile_picture']
+
+class SimpleUserSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'full_name']
+
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip()
+
+
+
+class DoctorAvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorAvailability
+        fields = ['id', 'day', 'start_time', 'end_time']
+
 
 class WeekdaySerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,13 +41,15 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)  # Fetch full user details
     available_days = WeekdaySerializer(many=True, read_only=True)  # Fetch full weekday names
     hospital = HospitalSerializer(read_only = True)
+    availabilities = DoctorAvailabilitySerializer(many=True, read_only=True)
+    today_slots = serializers.SerializerMethodField()
 
     class Meta:
         model = DoctorProfile
         fields = [
             'id', 'user', 'specialization', 'hospital', 'available_days',
             'consultation_fee', 'years_of_experience', 'license_number',
-            'certifications', 'profile_picture'
+            'certifications', 'profile_picture','availabilities','today_slots'
         ]
 
     def create(self, validated_data):
@@ -38,6 +58,32 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
         doctor_profile = DoctorProfile.objects.create(**validated_data)
         doctor_profile.available_days.set(available_days)
         return doctor_profile
+
+
+
+    def get_today_slots(self, obj):
+        """
+        Return available time slots for today.
+        """
+        today_day = datetime.today().strftime("%A")
+        now = datetime.now().time()
+
+        # Get availability entries for today
+        today_availabilities = obj.availabilities.filter(day=today_day)
+
+        slots = []
+
+        for avail in today_availabilities:
+            start = datetime.combine(datetime.today(), avail.start_time)
+            end = datetime.combine(datetime.today(), avail.end_time)
+
+            while start + timedelta(minutes=30) <= end:
+                time_str = start.strftime('%H:%M')
+                if start.time() > now:
+                    slots.append(time_str)
+                start += timedelta(minutes=30)
+
+        return slots
 
 
 class PatientProfileSerializer(serializers.ModelSerializer):
@@ -70,6 +116,18 @@ class PatientProfileSerializer(serializers.ModelSerializer):
             }
             for doctor in doctors
         ]
+
+
+class DoctorAvailabilityCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorAvailability
+        fields = ['day', 'start_time', 'end_time']
+
+    def create(self, validated_data):
+        doctor = self.context['request'].user.doctor_profile
+        validated_data['doctor'] = doctor
+        return super().create(validated_data)
+
 
 
 
@@ -137,52 +195,3 @@ class LoginSerializer(serializers.Serializer):
 
 
 
-class MessageSerializer(serializers.ModelSerializer):
-    sender = UserSerializer(read_only=True)
-    recipient = UserSerializer(read_only=True)
-    
-    sender_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), 
-        source='sender', 
-        write_only=True
-    )
-    recipient_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), 
-        source='recipient', 
-        write_only=True
-    )
-    
-    file_url = serializers.SerializerMethodField()
-    video_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Message
-        fields = [
-            'id', 'sender', 'recipient', 'content',
-            'file', 'file_url', 'video', 'video_url',
-            'link', 'timestamp', 'is_read', 'message_type',
-            'sender_id', 'recipient_id'
-        ]
-        read_only_fields = ['timestamp', 'is_read', 'message_type']
-
-    def get_file_url(self, obj):
-        request = self.context.get('request')
-        return request.build_absolute_uri(obj.file.url) if obj.file else None
-
-    def get_video_url(self, obj):
-        request = self.context.get('request')
-        return request.build_absolute_uri(obj.video.url) if obj.video else None
-
-    def validate(self, data):
-        sender = data.get('sender')
-        recipient = data.get('recipient')
-
-        if sender and recipient:
-            if not ((sender.role == 'doctor' and recipient.role == 'patient') or 
-                    (sender.role == 'patient' and recipient.role == 'doctor')):
-                raise serializers.ValidationError("Messages can only be sent between doctors and patients")
-
-        if not any([data.get('content'), data.get('file'), data.get('video'), data.get('link')]):
-            raise serializers.ValidationError("Message must contain either content, file, video, or link")
-
-        return data

@@ -113,7 +113,7 @@ renderProfileCards(data) {
     first_name: 'No', 
     last_name: 'Doctor', 
     specialization: 'Not assigned',
-    profile_picture: '/static/images/default-doctor.png'
+    profile_picture: '/static/images/doctor.jpeg'
   };
 
 
@@ -674,7 +674,7 @@ const navigationHandler = {
   
   redirectToDoctorPage() {
     const baseUrl = window.location.origin;
-    window.location.href = `${baseUrl}/api/users/doctor-page`;
+    window.location.href = `${baseUrl}/api/users/doctor-page/`;
   }
 };
 
@@ -757,19 +757,12 @@ const medicationDisplay = {
         `;
       }
 
-      // Parse the medication data if it's a JSON string
-      let medication;
-      try {
-        medication = typeof medData === 'string' ? JSON.parse(medData) : medData;
-      } catch (e) {
-        console.error('Failed to parse medication data:', e);
-        medication = {
-          name: 'Unknown Medication',
-          dosage: '--',
-          frequency: '--',
-          instructions: 'Contact your doctor for details'
-        };
-      }
+    const medication = medData || {
+  name: 'Unknown Medication',
+  dosage: '--',
+  frequency: '--',
+  instructions: 'Contact your doctor for details'
+};
 
       return `
         <div class="medication-item border-b border-gray-100 dark:border-gray-700 py-4 last:border-0">
@@ -831,12 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// Add global helper functions
-window.enableCommunicationForPatients = communicationHandler.init.bind(communicationHandler);
-window.goToConversations = () => {
-  const baseUrl = window.location.origin;
-  window.location.href = `${baseUrl}/messaging/conversations/`;
-};
+
 
 
 

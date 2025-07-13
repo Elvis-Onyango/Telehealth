@@ -1,0 +1,132 @@
+{% extends 'basepages/base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+        <!-- Form Header -->
+        <div class="px-6 py-5 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Update Profile</h2>
+                    <p class="text-blue-600 mt-1">Edit your personal and professional details</p>
+                </div>
+                <div class="flex-shrink-0">
+                    <a href="{% url 'users:doctor_profile_view' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                        <i class="mr-1" data-lucide="arrow-left"></i> Back to profile
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data" class="divide-y divide-gray-100">
+            {% csrf_token %}
+            
+            <!-- Basic Information Section -->
+            <div class="p-6">
+                <div class="flex items-center mb-5">
+                    <i class="text-blue-500 mr-2" data-lucide="user"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">Personal Information</h3>
+                </div>
+                
+                <div class="space-y-5">
+                    {% for field in user_form %}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+                        <div class="md:pt-1">
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="md:col-span-2">
+                            {{ field }}
+                            {% for error in field.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Professional Information Section -->
+            {% if profile_form %}
+            <div class="p-6">
+                <div class="flex items-center mb-5">
+                    <i class="text-blue-500 mr-2" data-lucide="briefcase"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">Professional Information</h3>
+                </div>
+                
+                <div class="space-y-5">
+                    {% for field in profile_form %}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+                        <div class="md:pt-1">
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {% if field.help_text %}
+                            <p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="md:col-span-2">
+                            {{ field }}
+                            {% for error in field.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Form Actions -->
+            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                <a href="{% url 'users:doctor_profile_view' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="mr-2" data-lucide="save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Form Input Styling */
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        @apply w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors;
+    }
+    
+    /* File Input Styling */
+    input[type="file"] {
+        @apply block w-full text-sm text-gray-500
+               file:mr-4 file:py-2 file:px-4
+               file:rounded-lg file:border-0
+               file:text-sm file:font-semibold
+               file:bg-blue-50 file:text-blue-700
+               hover:file:bg-blue-100;
+    }
+    
+    /* Checkbox and Radio Styling */
+    input[type="checkbox"],
+    input[type="radio"] {
+        @apply h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded;
+    }
+    
+    /* Select Dropdown Styling */
+    select {
+        @apply pr-8;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+    }
+</style>
+{% endblock %}

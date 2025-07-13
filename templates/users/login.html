@@ -134,6 +134,9 @@
     spinner.classList.remove('hidden');
 
     const baseUrl = window.location.origin;
+    const urlParams = new URLSearchParams(window.location.search);
+    const nextPage = urlParams.get('next') || "/api/users/patient-dashboard/";;
+
 
     function getCSRFToken() {
       const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
@@ -172,19 +175,23 @@
       localStorage.setItem('user_role', data.role);
       localStorage.setItem('username', formData.username);
 
-      // Handle redirect based on role
-      const roleRedirects = {
-        "admin": "api/appointments/hospital-dashboard/",
-        "doctor": data.profile_required ? "api/users/doctor-profile-create/" : "api/users/dashboard/",
-        "patient": data.profile_required ? "api/users/patient-profile-create/" : "api/users/patient-dashboard/",
-      };
+// Handle redirect based on role
+const roleRedirects = {
+  "admin": "api/appointments/hospital-dashboard/",
+  "doctor": data.profile_required ? "api/users/doctor-profile-create/" : "api/users/dashboard/",
+  "patient": data.profile_required ? "api/users/patient-profile-create/" : "api/users/patient-dashboard/",
+};
 
-      const redirectUrl = roleRedirects[data.role];
-      if (!redirectUrl) {
-        throw new Error(`Unknown role: ${data.role}`);
-      }
+const redirectUrl = roleRedirects[data.role];
+if (!redirectUrl) {
+  throw new Error(`Unknown role: ${data.role}`);
+}
 
-      window.location.href = `${baseUrl}/${redirectUrl}`;
+// Dynamically pick the destination
+const nextPage = urlParams.get('next') || `/${redirectUrl}`;
+window.location.href = `${baseUrl}${nextPage}`;
+
+
 
     } catch (error) {
       console.error('Login error:', error);

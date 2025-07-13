@@ -1,4 +1,3 @@
-# users/notifications.py
 from pyfcm import FCMNotification
 from django.conf import settings
 

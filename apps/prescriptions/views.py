@@ -21,14 +21,30 @@ class MedicalHistoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
 
+from rest_framework.exceptions import PermissionDenied
+
 class PrescriptionListCreateView(generics.ListCreateAPIView):
-    queryset = Prescription.objects.all()
     serializer_class = PrescriptionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request, *args, **kwargs):
-        print("Received data:", request.data)  # Debug log
-        return super().create(request, *args, **kwargs)
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, 'patient_profile'):
+            return Prescription.objects.filter(patient__user=user)
+        elif hasattr(user, 'doctor_profile'):
+            return Prescription.objects.filter(doctor__user=user)
+        return Prescription.objects.none()
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if hasattr(user, 'doctor_profile'):
+            serializer.save(doctor=user.doctor_profile)
+        elif hasattr(user, 'patient_profile'):
+            serializer.save(patient=user.patient_profile)
+        else:
+            raise PermissionDenied("User must be a doctor or patient.")
+
+
 
 
 

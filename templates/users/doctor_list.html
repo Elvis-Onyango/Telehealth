@@ -108,6 +108,17 @@
               <input type="time" id="appointment-time" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Appointment Type</label>
+<select id="appointment-type" class="w-full p-2 border rounded-lg">
+  <option value="physical">Physical</option>
+  <option value="virtual">Virtual</option>
+</select>
+
+        <div><label class="block text-sm font-medium text-gray-700 mb-1 mt-4">Notes</label>
+<textarea id="appointment-notes" rows="2" class="w-full border rounded-lg p-2"></textarea></div>
+
+          </div>
 
           <!-- Payment Section -->
           <div class="bg-gray-50 p-4 rounded-lg">
@@ -439,6 +450,9 @@
 
       const date = document.getElementById("appointment-date").value;
       const time = document.getElementById("appointment-time").value;
+      const notes = document.getElementById("appointment-notes").value || "";
+      const type = document.getElementById("appointment-type").value || "physical";
+
 
       if (!date || !time) {
         alert("Please select a date and time");
@@ -458,20 +472,20 @@
 
       try {
         const response = await fetch(`${BASE_URL}/api/appointments/appointments/`, {
-    method: "POST",
-    headers: {
+        method: "POST",
+        headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
     },
     body: JSON.stringify({
-        date,  //date format: YYYY-MM-DD
-        time,  //correct time format: HH:MM:SS
-        doctor: selectedDoctorId,  // Ensure doctor ID is being passed correctly
-        payment_method: selectedPaymentMethod,  // e.g., "mpesa", "card"
-        total_fee: consultation_fee, 
-        notes: notes,  // Optional field for notes
-        reschedule_reason: rescheduleReason,  // Optional field if rescheduling
-    })
+    doctor: selectedDoctorId,
+    date: new Date(date).toISOString().split("T")[0],  // "YYYY-MM-DD"
+    time: time.length === 5 ? time + ":00" : time,      // make sure it's "HH:MM:SS"
+    type: type, 
+    payment_method: selectedPaymentMethod,
+    total_fee: consultationFee,
+    notes: notes,
+})
 });
 
 

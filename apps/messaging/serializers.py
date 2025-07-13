@@ -1,31 +1,65 @@
 from rest_framework import serializers
-from .models import Conversation, Message
+from .models import Message
 from apps.users.models import User
 
+
+# 👤 Mini user info serializer for display
+class UserSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'full_name']
+
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+    
+
+# 📥 Message list / detail serializer (read-only)
 class MessageSerializer(serializers.ModelSerializer):
-    sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
-    sender_id = serializers.IntegerField(source='sender.id', read_only=True)
-    is_doctor = serializers.SerializerMethodField()
+    sender = UserSerializer(read_only=True)
+    recipient = UserSerializer(read_only=True)
 
     class Meta:
         model = Message
-        fields = ['id', 'conversation', 'sender', 'sender_id', 'sender_name', 'is_doctor', 
-                 'content', 'file', 'file_type', 'timestamp', 'read']
+        fields = [
+            'id',
+            'sender',
+            'recipient',
+            'message_type',
+            'content',
+            'file',
+            'is_read',
+            'timestamp'
+        ]
 
-    def get_is_doctor(self, obj):
-        return getattr(obj.sender, 'role', '') == 'doctor'
 
-class ConversationSerializer(serializers.ModelSerializer):
-    doctor_name = serializers.CharField(source='doctor.user.get_full_name', read_only=True)
-    patient_name = serializers.CharField(source='patient.user.get_full_name', read_only=True)
-    last_message = serializers.SerializerMethodField()
-    unread_count = serializers.IntegerField(read_only=True)  # Optimized
+# ✉️ For creating messages
+class CreateMessageSerializer(serializers.ModelSerializer):
+    recipient = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    message_type = serializers.ChoiceField(choices=Message.MESSAGE_TYPES)
 
     class Meta:
-        model = Conversation
-        fields = ['id', 'doctor', 'patient', 'doctor_name', 'patient_name', 
-                 'created_at', 'updated_at', 'last_message', 'unread_count']
+        model = Message
+        fields = ['recipient', 'message_type', 'content', 'file']
 
-    def get_last_message(self, obj):
-        last_msg = obj.messages.order_by('-timestamp').first()
-        return MessageSerializer(last_msg).data if last_msg else None
+    def validate(self, data):
+        sender = self.context['request'].user
+        recipient = data.get('recipient')
+
+        if sender == recipient:
+            raise serializers.ValidationError("You can't message yourself.")
+
+        # If message type is 'file', file must be included
+        if data['message_type'] == 'file' and not data.get('file'):
+            raise serializers.ValidationError("File message must include a file.")
+
+        # For 'dosage' or 'meeting', content is required
+        if data['message_type'] in ['dosage', 'meeting'] and not data.get('content'):
+            raise serializers.ValidationError(f"{data['message_type'].capitalize()} message must include content.")
+
+        return data
+
+    def create(self, validated_data):
+        validated_data['sender'] = self.context['request'].user
+        return super().create(validated_data)

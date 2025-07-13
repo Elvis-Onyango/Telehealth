@@ -1,138 +1,124 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from .models import Conversation, Message
-from .serializers import ConversationSerializer, MessageSerializer
-from apps.users.models import DoctorProfile, PatientProfile
-import os
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.conf import settings
-from datetime import datetime
-from django.views import View
+from rest_framework.exceptions import PermissionDenied
+from django.db.models import Q
 from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.views import View
 
-class ConversationListView(generics.ListAPIView):
-    serializer_class = ConversationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        if user.role == 'doctor':
-            doctor_profile = get_object_or_404(DoctorProfile, user=user)
-            return Conversation.objects.filter(doctor=doctor_profile)
-        elif user.role == 'patient':
-            patient_profile = get_object_or_404(PatientProfile, user=user)
-            return Conversation.objects.filter(patient=patient_profile)
-        return Conversation.objects.none()
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-class StartConversationView(generics.CreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        user = request.user
-        other_user_id = request.data.get('user_id')
-        
-        if user.role == 'doctor':
-            doctor_profile = get_object_or_404(DoctorProfile, user=user)
-            patient_profile = get_object_or_404(PatientProfile, user__id=other_user_id)
-            conversation, created = Conversation.objects.get_or_create(
-                doctor=doctor_profile,
-                patient=patient_profile
-            )
-        elif user.role == 'patient':
-            patient_profile = get_object_or_404(PatientProfile, user=user)
-            doctor_profile = get_object_or_404(DoctorProfile, user__id=other_user_id)
-            conversation, created = Conversation.objects.get_or_create(
-                doctor=doctor_profile,
-                patient=patient_profile
-            )
-        else:
-            return Response({'error': 'Invalid user role'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        serializer = ConversationSerializer(conversation, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+from .models import Message
+from .serializers import MessageSerializer, CreateMessageSerializer
+from apps.users.models import User, DoctorProfile, PatientProfile
+from django.shortcuts import redirect
+from django.views import View
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.urls import reverse
 
 class MessageListView(generics.ListAPIView):
+    """
+    API View to fetch all messages between a logged-in user and a contact.
+    Only accessible if there's a valid doctor-patient relationship.
+    """
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        conversation_id = self.kwargs['conversation_id']
         user = self.request.user
-        conversation = get_object_or_404(Conversation, id=conversation_id)
-        
-        # Verify user is part of this conversation
-        if user.role == 'doctor' and conversation.doctor.user != user:
-            return Message.objects.none()
-        elif user.role == 'patient' and conversation.patient.user != user:
-            return Message.objects.none()
-            
-        return Message.objects.filter(conversation=conversation).order_by('timestamp')
+        contact_id = self.kwargs['contact_id']
+        contact = User.objects.get(pk=contact_id)
 
-class MarkMessagesAsReadView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+        if user.role == 'doctor':
+            if not hasattr(user, 'doctor_profile'):
+                raise PermissionDenied("Doctor profile not found.")
+            if not user.doctor_profile.patients.filter(user=contact).exists():
+                raise PermissionDenied("This patient is not assigned to you.")
 
-    def post(self, request, conversation_id):
-        user = request.user
-        conversation = get_object_or_404(Conversation, id=conversation_id)
-        
-        # Verify user is part of this conversation
-        if (user.role == 'doctor' and conversation.doctor.user != user) or \
-           (user.role == 'patient' and conversation.patient.user != user):
-            return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
-        
-        # Mark all unread messages as read
-        Message.objects.filter(
-            conversation=conversation,
-            read=False
-        ).exclude(
-            sender=user
-        ).update(read=True)
-        
-        return Response({'status': 'messages marked as read'}, status=status.HTTP_200_OK)
-
-class FileUploadView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def post(self, request):
-        if 'file' not in request.FILES:
-            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        file = request.FILES['file']
-        if file.size > 10 * 1024 * 1024:  # 10MB limit
-            return Response({'error': 'File too large (max 10MB)'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Create a unique filename
-        ext = os.path.splitext(file.name)[1]
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        filename = f"chat_uploads/{request.user.id}_{timestamp}{ext}"
-        
-        # Save the file
-        path = default_storage.save(filename, ContentFile(file.read()))
-        file_url = default_storage.url(path)
-        
-        # Determine file type
-        if file.content_type.startswith('image/'):
-            file_type = 'image'
-        elif file.content_type == 'application/pdf':
-            file_type = 'pdf'
-        elif 'wordprocessingml' in file.content_type or 'msword' in file.content_type:
-            file_type = 'document'
+        elif user.role == 'patient':
+            if not hasattr(user, 'patient_profile'):
+                raise PermissionDenied("Patient profile not found.")
+            if not hasattr(contact, 'doctor_profile') or not contact.doctor_profile.patients.filter(user=user).exists():
+                raise PermissionDenied("This doctor is not treating you.")
         else:
-            file_type = 'file'
-        
-        return Response({
-            'url': request.build_absolute_uri(file_url),
-            'file_type': file_type
-        }, status=status.HTTP_201_CREATED)
+            raise PermissionDenied("Invalid role.")
+
+        return Message.objects.filter(
+            Q(sender=user, recipient=contact) |
+            Q(sender=contact, recipient=user)
+        ).order_by('timestamp')
 
 
-class ChatPage(View):
-    def get(self):
-        return render(request,'messaging/chat.html') 
+from rest_framework.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist
+
+class SendMessageView(generics.CreateAPIView):
+    serializer_class = CreateMessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        sender = self.request.user
+        recipient = serializer.validated_data['recipient']
+
+        if sender == recipient:
+            raise PermissionDenied("You can't message yourself.")
+
+        if sender.role == 'doctor':
+            try:
+                doctor_profile = sender.doctor_profile
+                patient_profile = recipient.patient_profile
+            except ObjectDoesNotExist:
+                raise PermissionDenied("Profile not found.")
+
+            #  filter by recipient.user.id (doctor_profile.patients is M2M of PatientProfile)
+            if not doctor_profile.patients.filter(user=recipient).exists():
+                raise PermissionDenied("You are not assigned to this patient.")
+
+        elif sender.role == 'patient':
+            try:
+                patient_profile = sender.patient_profile
+                doctor_profile = recipient.doctor_profile
+            except ObjectDoesNotExist:
+                raise PermissionDenied("Profile not found.")
+
+            #  filter by recipient.user.id (patient_profile.doctors is M2M of DoctorProfile)
+            if not patient_profile.doctors.filter(user=recipient).exists():
+                raise PermissionDenied("You are not assigned to this doctor.")
+
+        else:
+            raise PermissionDenied("Unauthorized role.")
+
+        serializer.save(sender=sender)
+
+
+
+
+
+
+
+@method_decorator(login_required(login_url="/api/users/login-page/"), name='dispatch')
+class ChatTemplateView(View):
+    def get(self, request):
+        user = request.user
+
+        # Redirect if user role is not doctor or patient
+        if user.role not in ['doctor', 'patient']:
+            return redirect(reverse('users:login-page') + f'?next={request.path}')
+
+        # Redirect if profile is missing
+        if user.role == 'doctor' and not hasattr(user, 'doctor_profile'):
+            return redirect(reverse('users:doctor-profile-create'))
+
+        if user.role == 'patient' and not hasattr(user, 'patient_profile'):
+            return redirect(reverse('users:patient-profile-create'))
+
+        # If all is good, show chat UI
+        context = {
+            'role': user.role,
+            'username': user.username,
+            'user_id': user.id,
+        }
+        return render(request, 'messaging/chat.html', context)
+
+

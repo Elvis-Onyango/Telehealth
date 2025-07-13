@@ -1,8 +1,9 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
-# =================== Custom User Manager (No Email Required) ===================
+# =================== Custom User Manager ===================
 class CustomUserManager(BaseUserManager):
     def create_user(self, username, password=None, **extra_fields):
         user = self.model(username=username, **extra_fields)
@@ -43,8 +44,70 @@ class User(AbstractUser):
     def is_patient(self):
         return self.role == 'patient'
 
+    def get_messaging_contacts(self):
+        from apps.messaging.models import Message  # Avoid circular import
+
+        if self.role == 'doctor':
+            try:
+                patients = self.doctor_profile.get_patients()
+                contacts = []
+                for patient in patients:
+                    user = patient.user
+                    last_message = Message.objects.filter(
+                        models.Q(sender=self, recipient=user) |
+                        models.Q(sender=user, recipient=self)
+                    ).order_by('-timestamp').first()
+
+                    unread_count = Message.objects.filter(
+                        sender=user,
+                        recipient=self,
+                        is_read=False
+                    ).count()
+
+                    contacts.append({
+                        'id': user.id,
+                        'username': user.username,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'last_message': last_message,
+                        'unread_count': unread_count
+                    })
+                return contacts
+            except DoctorProfile.DoesNotExist:
+                return []
+
+        elif self.role == 'patient':
+            try:
+                doctors = self.patient_profile.get_doctors()
+                contacts = []
+                for doctor in doctors:
+                    user = doctor.user
+                    last_message = Message.objects.filter(
+                        models.Q(sender=self, recipient=user) |
+                        models.Q(sender=user, recipient=self)
+                    ).order_by('-timestamp').first()
+
+                    unread_count = Message.objects.filter(
+                        sender=user,
+                        recipient=self,
+                        is_read=False
+                    ).count()
+
+                    contacts.append({
+                        'id': user.id,
+                        'username': user.username,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'last_message': last_message,
+                        'unread_count': unread_count
+                    })
+                return contacts
+            except PatientProfile.DoesNotExist:
+                return []
+        return []
+
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"  # Full name display
+        return f"{self.first_name} {self.last_name}"
 
 # =================== Weekday Model ===================
 class Weekday(models.Model):
@@ -57,7 +120,6 @@ class Weekday(models.Model):
         ('saturday', 'Saturday'),
         ('sunday', 'Sunday'),
     ]
-
     day = models.CharField(max_length=10, choices=DAY_CHOICES, unique=True)
 
     def __str__(self):
@@ -72,7 +134,7 @@ class DoctorProfile(models.Model):
     available_days = models.ManyToManyField(Weekday, blank=True, related_name="doctors")
     consultation_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     years_of_experience = models.PositiveIntegerField(default=0)
-    license_number = models.CharField(max_length=50, unique=True, blank=False, null=False)
+    license_number = models.CharField(max_length=50, unique=True)
     certifications = models.FileField(upload_to="doctor_certifications/", blank=True, null=True)
     profile_picture = models.ImageField(upload_to="doctor_pictures/", blank=True, null=True)
 
@@ -81,8 +143,45 @@ class DoctorProfile(models.Model):
             raise ValidationError("Only users with the 'doctor' role can have a DoctorProfile.")
         super().save(*args, **kwargs)
 
+    def get_patients(self):
+        return self.patients.all()
+
     def __str__(self):
         return f"Dr. {self.user.first_name} {self.user.last_name} - {self.specialization}"
+
+    def get_available_times_for(self, day):
+        return self.availabilities.filter(day=day.lower()).first()
+
+    def is_available_on(self, day, time):
+        slot = self.get_available_times_for(day)
+        if slot and slot.start_time <= time <= slot.end_time:
+            return True
+        return False
+                 
+class DoctorAvailability(models.Model):
+    doctor = models.ForeignKey('DoctorProfile', on_delete=models.CASCADE, related_name="availabilities")
+    day = models.CharField(
+        max_length=10,
+        choices=[
+            ('monday', 'Monday'),
+            ('tuesday', 'Tuesday'),
+            ('wednesday', 'Wednesday'),
+            ('thursday', 'Thursday'),
+            ('friday', 'Friday'),
+            ('saturday', 'Saturday'),
+            ('sunday', 'Sunday'),
+        ]
+    )
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    class Meta:
+        unique_together = ('doctor', 'day')  # Prevent duplicate entries for same day
+
+    def __str__(self):
+        return f"{self.doctor.user.get_full_name()} - {self.day.title()} ({self.start_time} to {self.end_time})"
+
+
 
 # =================== Patient Profile Model ===================
 class PatientProfile(models.Model):
@@ -109,58 +208,8 @@ class PatientProfile(models.Model):
             raise ValidationError("Only users with the 'patient' role can have a PatientProfile.")
         super().save(*args, **kwargs)
 
+    def get_doctors(self):
+        return [self.primary_doctor] if self.primary_doctor else []
+
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
-
-
-class Message(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
-    content = models.TextField(blank=True, null=True)
-    file = models.FileField(upload_to='message_files/', blank=True, null=True)
-    video = models.FileField(upload_to='message_videos/', blank=True, null=True)
-    link = models.URLField(blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
-    message_type = models.CharField(
-        max_length=10,
-        choices=[
-            ('text', 'Text'),
-            ('image', 'Image'),
-            ('video', 'Video'),
-            ('file', 'File'),
-            ('link', 'Link')
-        ],
-        default='text'
-    )
-
-    class Meta:
-        ordering = ['-timestamp']
-
-    def clean(self):
-        # Validate doctor-patient relationship
-        if not ((self.sender.role == 'doctor' and self.recipient.role == 'patient') or 
-                (self.sender.role == 'patient' and self.recipient.role == 'doctor')):
-            raise ValidationError("Messages can only be exchanged between doctors and patients")
-        
-        # Validate message has content
-        if not any([self.content, self.file, self.video, self.link]):
-            raise ValidationError("Message must have content, file, video, or link")
-
-    def save(self, *args, **kwargs):
-        # Determine message type
-        if self.video:
-            self.message_type = 'video'
-        elif self.file:
-            if self.file.name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
-                self.message_type = 'image'
-            else:
-                self.message_type = 'file'
-        elif self.link:
-            self.message_type = 'link'
-        
-        self.clean()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.sender} → {self.recipient}: {self.message_type}"

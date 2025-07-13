@@ -4,3 +4,7 @@ from django.shortcuts import render
 
 def landing_page(requests):
 	return render(requests, 'landing/index.html')
+
+
+def api_testing(requests):
+	return render(requests,'landing/test.html')

@@ -75,6 +75,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'apps.users.middleware.ChatAccessMiddleware',
+    "apps.admin_auth.middleware.SmartAdminLoginRedirectMiddleware",
 ]
 
 ROOT_URLCONF = 'telemedicine_project.urls'
@@ -91,6 +92,7 @@ AUTHENTICATION_BACKENDS = (
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication', 
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -192,8 +194,8 @@ PASSWORD_HASHERS = [
 ]
 
 
-# Redirect Django admin login to your custom login page
-LOGIN_URL = "/admin-login/"  # This should match the URL for your custom admin login page
+#  login to your custom login page
+LOGIN_URL = "/api/users/login-page/"  # This should match the URL for your custom  login page
 
 
 SECURE_SSL_REDIRECT = False
