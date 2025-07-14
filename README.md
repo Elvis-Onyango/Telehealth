@@ -59,6 +59,3 @@ Telehealth is a web-based telemedicine platform that allows patients to consult 
 - AI-based diagnosis support
 - Multi-language support
 - Mobile app integration
-
-## ⚠️ Notice
-This project is a **school project** and is not intended for commercial use. Unauthorized use, modification, or dis
