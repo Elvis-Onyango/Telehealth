@@ -1,9 +1,16 @@
 from rest_framework import serializers
 from .models import  VideoCall
 
-class VideoCallSerializer(serializers.ModelSerializer):
+class AppointmentSerializer(serializers.ModelSerializer):
+    video_call_link = serializers.SerializerMethodField()
+
     class Meta:
-        model = VideoCall
-        fields = '__all__'
-        read_only_fields = ['meeting_id', 'meeting_link']  # Prevent manual editing
+        model = Appointment
+        fields = ['id', 'doctor', 'patient', 'date', 'time', 'type', 'status', 'video_call_link']
+
+    def get_video_call_link(self, obj):
+        if hasattr(obj, 'video_call'):
+            return obj.video_call.meeting_link
+        return None
+
 

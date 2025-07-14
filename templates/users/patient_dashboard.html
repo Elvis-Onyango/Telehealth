@@ -575,23 +575,195 @@
             </section>
           </div>
 
-          <!-- Right Column -->
-          <div class="space-y-6">
-            <!-- Calendar -->
-            <section class="section-spacing">
-              <div class="dashboard-card p-5 card-spacing hover-scale">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-lg font-semibold">Appointments</h3>
-                  <button onclick="redirectToDoctorPage()" class="btn-primary flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm button-spacing">
-                    <span class="material-icons-round text-base">add</span>
-                    <span>New</span>
-                  </button>
-                </div>
-                <div class="min-h-[400px]">
-                  <div id="calendar"></div>
-                </div>
-              </div>
-            </section>
+<!-- Right Column -->
+<div class="space-y-6">
+  <!-- Calendar -->
+  <section class="section-spacing">
+    <div class="dashboard-card p-5 card-spacing hover-scale">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold">Appointments</h3>
+        <button onclick="redirectToDoctorPage()" class="btn-primary flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm button-spacing">
+          <span class="material-icons-round text-base">add</span>
+          <span>New</span>
+        </button>
+      </div>
+      <div class="min-h-[400px]">
+        <div id="calendar"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize calendar
+  const calendarEl = document.getElementById('calendar');
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    eventDidMount: function(info) {
+      // Add status indicator dot
+      const dot = document.createElement('span');
+      dot.className = `health-indicator indicator-${info.event.extendedProps.status}`;
+      info.el.querySelector('.fc-event-title').prepend(dot);
+    },
+    eventClick: function(info) {
+      showAppointmentDetails(info.event);
+    }
+  });
+
+  // Fetch appointments from API
+  fetchAppointments().then(appointments => {
+    appointments.forEach(appointment => {
+      calendar.addEvent({
+        title: `${appointment.doctor_name} - ${appointment.type}`,
+        start: `${appointment.date}T${appointment.time}`,
+        extendedProps: {
+          status: appointment.status,
+          type: appointment.type,
+          doctor: appointment.doctor_name,
+          patient: appointment.patient_name,
+          notes: appointment.notes
+        },
+        color: getStatusColor(appointment.status)
+      });
+    });
+    calendar.render();
+  });
+
+  // Status color mapping
+  function getStatusColor(status) {
+    const colors = {
+      'pending': '#F59E0B',    // amber
+      'confirmed': '#10B981',  // emerald
+      'cancelled': '#EF4444',  // red
+      'completed': '#3B82F6'   // blue
+    };
+    return colors[status.toLowerCase()] || '#6B7280';
+  }
+
+  // Fetch appointments from your API
+  async function fetchAppointments() {
+    try {
+      const response = await fetch('/api/appointments/', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch appointments');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      return [];
+    }
+  }
+
+  // Show appointment details
+  function showAppointmentDetails(event) {
+    // Create a modal or use your existing modal system
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Appointment Details</h3>
+          <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-500 hover:text-gray-700">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Doctor</p>
+            <p class="font-medium">${event.extendedProps.doctor}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Date & Time</p>
+            <p class="font-medium">${event.start.toLocaleString()}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Status</p>
+            <p class="font-medium">
+              <span class="status-pill status-${event.extendedProps.status.toLowerCase()}">
+                ${event.extendedProps.status}
+              </span>
+            </p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Type</p>
+            <p class="font-medium">${event.extendedProps.type}</p>
+          </div>
+          ${event.extendedProps.notes ? `
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Notes</p>
+            <p class="font-medium">${event.extendedProps.notes}</p>
+          </div>
+          ` : ''}
+        </div>
+        <div class="mt-6 flex justify-end gap-2">
+          <button onclick="this.parentElement.parentElement.remove()" class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
+            Close
+          </button>
+          ${event.extendedProps.status === 'pending' ? `
+          <button onclick="cancelAppointment('${event.id}')" class="px-4 py-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300">
+            Cancel
+          </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+});
+</script>
+
+<style>
+/* Add these styles to your existing CSS */
+.fc-event {
+  cursor: pointer;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.fc-event-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-pending {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.status-confirmed {
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+
+.status-cancelled {
+  background-color: #FEE2E2;
+  color: #991B1B;
+}
+
+.status-completed {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+}
+</style>
             
             <!-- Medications -->
             <section class="section-spacing">

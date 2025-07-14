@@ -508,45 +508,6 @@ const chatbotHandler = {
 };
 
 
-// Calendar Handler
-const calendarHandler = {
-  init() {
-    if (elements.calendarEl) {
-      this.calendar = new FullCalendar.Calendar(elements.calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay'
-        },
-        events: [
-          { title: 'Appointment with Dr. Smith', date: new Date(), color: '#3b82f6' },
-          { title: 'Follow-up with Dr. Johnson', date: this.addDays(new Date(), 3), color: '#10b981' },
-        ],
-        eventClick: (info) => {
-          alert(`Event: ${info.event.title}\nDate: ${info.event.start.toLocaleDateString()}`);
-        },
-        eventContent: (arg) => {
-          return {
-            html: `
-              <div class="fc-event-main">
-                <span class="material-icons fc-event-icon">event</span>
-                <span class="fc-event-title">${arg.event.title}</span>
-              </div>
-            `
-          };
-        }
-      });
-      this.calendar.render();
-    }
-  },
-  
-  addDays(date, days) {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-  }
-};
 
 // Communication Handler
 const communicationHandler = {

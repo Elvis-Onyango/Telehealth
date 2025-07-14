@@ -51,11 +51,33 @@ class HospitalDetailAPIView(APIView):
         return Response({"message": "Hospital deleted successfully!"}, status=status.HTTP_204_NO_CONTENT)
 
 
+from rest_framework import generics, permissions
+from .models import Appointment
+from .serializers import AppointmentCreateSerializer
+
 class AppointmentCreateView(generics.CreateAPIView):
     queryset = Appointment.objects.all()
     serializer_class = AppointmentCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
+
+    def perform_create(self, serializer):
+        # Pass the request object in the context instead of trying to save it
+        serializer.save()
+
+# views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+
+class AppointmentCalendarAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        appointments = Appointment.objects.filter(
+            doctor__user=request.user
+        ).select_related('doctor__user', 'patient__user')
+        serializer = AppointmentCreateSerializer(appointments, many=True)
+        return Response(serializer.data)    
 #===========================page displays=================================================================================
 
 class HospitalDashboardView(View):

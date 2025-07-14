@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Video Consultation</title>
+    <title>Schedule Video Consultation</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
-        /* Custom animations and transitions */
+        /* Existing styles... */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -24,6 +24,59 @@
         .card-shadow {
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 900px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .iframe-container {
+            flex-grow: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center min-h-screen p-4">
@@ -32,7 +85,7 @@
         <!-- Header with decorative element -->
         <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-center">
             <div class="flex justify-center mb-3">
-                <div class="bg-white/20 p-3 rounded-full">
+                <div class="bg-white/20 p-3 rounded-full animate-pulse">
                     <i class="fas fa-video text-white text-xl"></i>
                 </div>
             </div>
@@ -44,20 +97,23 @@
         <div class="p-6 md:p-8">
             <!-- Video Call Creation Form -->
             <form id="create-meeting-form" class="space-y-5">
-                <!-- Scheduled Time -->
+                <!-- Appointment Selector -->
                 <div class="space-y-1">
-                    <label for="scheduled_time" class="block text-sm font-medium text-gray-700 flex items-center">
-                        <i class="far fa-calendar-alt text-blue-500 mr-2"></i>
-                        Consultation Time
+                    <label for="appointment_id" class="block text-sm font-medium text-gray-700 flex items-center">
+                        <i class="fas fa-calendar-check text-blue-500 mr-2"></i>
+                        Select Appointment
                     </label>
                     <div class="relative">
-                        <input 
-                            type="datetime-local" 
-                            id="scheduled_time" 
-                            name="scheduled_time" 
-                            class="w-full px-4 py-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-smooth"
+                        <select
+                            id="appointment_id"
+                            name="appointment_id"
+                            class="w-full px-4 py-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-smooth appearance-none"
                             required>
-                        <i class="fas fa-clock absolute left-3 top-3.5 text-gray-400"></i>
+                            <option value="" disabled selected>Select an appointment</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-gray-400 pointer-events-none"></i>
+                        <i class="fas fa-user-md absolute left-3 top-3.5 text-gray-400"></i>
                     </div>
                 </div>
 
@@ -74,6 +130,7 @@
                             name="duration" 
                             min="15" 
                             max="120" 
+                            value="30"
                             class="w-full px-4 py-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-smooth"
                             required>
                         <i class="fas fa-hourglass-half absolute left-3 top-3.5 text-gray-400"></i>
@@ -86,7 +143,7 @@
                     <button 
                         type="submit" 
                         id="submit-btn"
-                        class="w-full flex justify-center items-center py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-smooth shadow-md">
+                        class="w-full flex justify-center items-center py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-smooth shadow-md hover:shadow-lg">
                         <span id="btn-text">Schedule Consultation</span>
                         <span id="spinner" class="ml-2 hidden">
                             <i class="fas fa-spinner fa-spin"></i>
@@ -104,6 +161,26 @@
         </div>
     </div>
 
+    <!-- Video Call Modal -->
+    <div id="video-call-modal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Video Consultation</h2>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="iframe-container">
+                <iframe id="video-call-iframe" allow="camera; microphone; fullscreen"></iframe>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button id="end-call" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center">
+                    <i class="fas fa-phone-slash mr-2"></i> End Call
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('create-meeting-form');
@@ -112,6 +189,76 @@
             const submitBtn = document.getElementById('submit-btn');
             const btnText = document.getElementById('btn-text');
             const spinner = document.getElementById('spinner');
+            const appointmentSelect = document.getElementById('appointment_id');
+            const modal = document.getElementById('video-call-modal');
+            const iframe = document.getElementById('video-call-iframe');
+            const closeModal = document.getElementById('close-modal');
+            const endCallBtn = document.getElementById('end-call');
+
+            // Modal controls
+            closeModal.addEventListener('click', () => {
+                modal.style.display = 'none';
+                iframe.src = '';
+            });
+
+            endCallBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+                iframe.src = '';
+                // You might want to add API call to end the meeting
+            });
+
+            // Close modal when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                    iframe.src = '';
+                }
+            });
+
+            // Fetch appointments from API
+            async function fetchAppointments() {
+                try {
+                    const response = await fetch('/api/appointments/virtual/', {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken()
+                        }
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to fetch appointments');
+                    
+                    const data = await response.json();
+                    
+                    // Populate select dropdown
+                    data.forEach(appointment => {
+                        const option = document.createElement('option');
+                        const date = new Date(appointment.date);
+                        const formattedDate = date.toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                        
+                        option.value = appointment.id;
+                        option.textContent = `${formattedDate} - ${appointment.time} with ${appointment.patient.name}`;
+                        appointmentSelect.appendChild(option);
+                    });
+                    
+                } catch (error) {
+                    console.error('Error fetching appointments:', error);
+                    // Show error in dropdown
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'Error loading appointments';
+                    option.disabled = true;
+                    appointmentSelect.innerHTML = '';
+                    appointmentSelect.appendChild(option);
+                }
+            }
+
+            // Initialize form
+            fetchAppointments();
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -124,13 +271,12 @@
 
                 const formData = new FormData(form);
                 const data = {
-                    scheduled_time: formData.get('scheduled_time'),
+                    appointment_id: formData.get('appointment_id'),
                     duration: parseInt(formData.get('duration')),
                 };
-                const baseUrl = window.location.origin;
 
                 try {
-                    const response = await fetch(`${baseUrl}/api/videoconferencing/create-calls/`, {
+                    const response = await fetch('/api/videoconferencing/create-calls/', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -146,7 +292,7 @@
                     messageContainer.classList.add('animate-fade-in-up');
 
                     if (response.ok) {
-                        // Success message
+                        // Success message with embedded iframe option
                         messageContent.innerHTML = `
                             <div class="bg-green-50 border-green-200 text-green-700 rounded-lg p-4">
                                 <div class="flex items-center">
@@ -155,16 +301,27 @@
                                 </div>
                                 <p class="mt-2 text-sm">Your video consultation has been successfully scheduled.</p>
                                 <div class="mt-3 bg-white p-3 rounded border border-green-100">
-                                    <p class="text-sm font-medium">Meeting Link:</p>
+                                    <p class="text-sm font-medium">Meeting ID:</p>
+                                    <p class="font-mono text-sm">${result.meeting_id}</p>
+                                    <p class="text-sm font-medium mt-2">Meeting Link:</p>
                                     <a href="${result.meeting_link}" target="_blank" class="text-blue-600 hover:underline break-all">${result.meeting_link}</a>
                                 </div>
-                                <div class="mt-3 flex space-x-2">
-                                    <button onclick="copyToClipboard('${result.meeting_link}')" class="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded text-sm hover:bg-green-200 transition-smooth">
+                                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <button onclick="copyToClipboard('${result.meeting_link}')" class="bg-green-100 text-green-700 px-3 py-2 rounded text-sm hover:bg-green-200 transition-smooth flex items-center justify-center">
                                         <i class="far fa-copy mr-1"></i> Copy Link
                                     </button>
-                                    <a href="${result.meeting_link}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200 transition-smooth text-center">
-                                        <i class="fas fa-external-link-alt mr-1"></i> Open
+                                    <button onclick="openInIframe('${result.meeting_link}')" class="bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200 transition-smooth flex items-center justify-center">
+                                        <i class="fas fa-video mr-1"></i> Open in App
+                                    </button>
+                                    <a href="${result.meeting_link}" target="_blank" class="bg-purple-100 text-purple-700 px-3 py-2 rounded text-sm hover:bg-purple-200 transition-smooth flex items-center justify-center">
+                                        <i class="fas fa-external-link-alt mr-1"></i> Open in New Tab
                                     </a>
+                                    <button onclick="shareMeetingLink('${result.meeting_link}', '${result.meeting_id}')" class="bg-yellow-100 text-yellow-700 px-3 py-2 rounded text-sm hover:bg-yellow-200 transition-smooth flex items-center justify-center">
+                                        <i class="fas fa-share-alt mr-1"></i> Share
+                                    </button>
+                                </div>
+                                <div class="mt-3 text-xs text-gray-500">
+                                    <p>This link will be active at the scheduled time.</p>
                                 </div>
                             </div>
                         `;
@@ -176,7 +333,8 @@
                                     <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
                                     <h3 class="font-semibold">${result.error || 'Error creating consultation'}</h3>
                                 </div>
-                                <p class="mt-2 text-sm">Please check your details and try again.</p>
+                                <p class="mt-2 text-sm">${result.detail || 'Please check your details and try again.'}</p>
+                                ${result.appointment_id ? `<p class="mt-1 text-xs">Appointment ID: ${result.appointment_id}</p>` : ''}
                             </div>
                         `;
                     }
@@ -189,7 +347,8 @@
                                 <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
                                 <h3 class="font-semibold">Network Error</h3>
                             </div>
-                            <p class="mt-2 text-sm">Unable to connect to server. Please try again later.</p>
+                            <p class="mt-2 text-sm">Unable to connect to server. Please check your internet connection and try again.</p>
+                            <p class="mt-1 text-xs">Error: ${error.message}</p>
                         </div>
                     `;
                 } finally {
@@ -197,16 +356,14 @@
                     submitBtn.disabled = false;
                     btnText.textContent = 'Schedule Consultation';
                     spinner.classList.add('hidden');
+                    
+                    // Scroll to message
+                    messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             });
-
-            // Set minimum datetime to current time
-            const now = new Date();
-            const timezoneOffset = now.getTimezoneOffset() * 60000;
-            const localISOTime = (new Date(now - timezoneOffset)).toISOString().slice(0, 16);
-            document.getElementById('scheduled_time').min = localISOTime;
         });
 
+        // Global functions
         function getCSRFToken() {
             const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
             return cookie ? cookie.split('=')[1] : '';
@@ -228,6 +385,35 @@
             }).catch(() => {
                 alert('Failed to copy link. Please try again.');
             });
+        }
+
+        function openInIframe(meetingLink) {
+            const modal = document.getElementById('video-call-modal');
+            const iframe = document.getElementById('video-call-iframe');
+            
+            iframe.src = meetingLink;
+            modal.style.display = 'block';
+            
+            // Focus the iframe for better accessibility
+            setTimeout(() => {
+                iframe.focus();
+            }, 100);
+        }
+
+        function shareMeetingLink(link, meetingId) {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Join my video consultation',
+                    text: `Please join my video consultation. Meeting ID: ${meetingId}`,
+                    url: link
+                }).catch(err => {
+                    console.log('Error sharing:', err);
+                    copyToClipboard(link);
+                });
+            } else {
+                copyToClipboard(link);
+                alert('Meeting link copied to clipboard. Please share it manually.');
+            }
         }
     </script>
 </body>

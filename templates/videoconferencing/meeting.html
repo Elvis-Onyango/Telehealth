@@ -3,46 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIVE MEETING PAGE</title>
+    <title>LIVE MEETING: {{ meeting.title_of_meeting }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+        }
+        #meet {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 95%;
+        }
+        .meeting-header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px 10px 0 0;
+        }
+        .meeting-info {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .control-panel {
+            background-color: white;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        @media (max-width: 768px) {
+            #meet {
+                width: 100%;
+                height: 400px;
+            }
+        }
+    </style>
 </head>
-<body>
-    <h2>Title: {{ meeting.title_of_meeting }}</h2>
-    <div id="meet"></div>
+<body class="p-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Meeting Header -->
+        <div class="meeting-header flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">
+                    <i class="fas fa-video mr-2"></i> {{ meeting.title_of_meeting }}
+                </h1>
+                <p class="text-blue-100 mt-1">
+                    <i class="fas fa-id-badge mr-1"></i> Meeting ID: {{ meeting.meeting_id }}
+                </p>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="copyMeetingLink()" 
+                        class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded flex items-center transition">
+                    <i class="fas fa-copy mr-1"></i> Copy Link
+                </button>
+                <button onclick="toggleFullscreen()" 
+                        class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded flex items-center transition">
+                    <i class="fas fa-expand mr-1"></i> Fullscreen
+                </button>
+            </div>
+        </div>
 
-    {% block script %}
+        <!-- Jitsi Meeting Container -->
+        <div id="meet" class="w-full" style="height: 70vh;"></div>
+
+        <!-- Meeting Information -->
+        <div class="meeting-info grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <h3 class="font-semibold text-gray-700">
+                    <i class="fas fa-info-circle mr-1 text-blue-500"></i> Meeting Details
+                </h3>
+                <p class="text-sm mt-1">
+                    <i class="far fa-clock mr-1 text-gray-500"></i> 
+                    Scheduled: {{ meeting.scheduled_time|date:"F j, Y, g:i a" }}
+                </p>
+                <p class="text-sm mt-1">
+                    <i class="fas fa-hourglass-half mr-1 text-gray-500"></i> 
+                    Duration: {{ meeting.duration }} minutes
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-700">
+                    <i class="fas fa-users mr-1 text-blue-500"></i> Participants
+                </h3>
+                <p class="text-sm mt-1">
+                    <i class="fas fa-user-md mr-1 text-gray-500"></i> 
+                    Host: {{ meeting.host.get_full_name|default:meeting.host.username }}
+                </p>
+                <p class="text-sm mt-1">
+                    <i class="fas fa-user mr-1 text-gray-500"></i> 
+                    Patient: {{ meeting.appointment.patient.user.get_full_name|default:meeting.appointment.patient.user.username }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel mt-4">
+            <h3 class="font-semibold text-gray-700 mb-2">
+                <i class="fas fa-cogs mr-1 text-blue-500"></i> Meeting Controls
+            </h3>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="api.executeCommand('toggleAudio')" 
+                        class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded flex items-center">
+                    <i class="fas fa-microphone mr-2"></i> Toggle Mic
+                </button>
+                <button onclick="api.executeCommand('toggleVideo')" 
+                        class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded flex items-center">
+                    <i class="fas fa-video mr-2"></i> Toggle Camera
+                </button>
+                <button onclick="api.executeCommand('toggleChat')" 
+                        class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded flex items-center">
+                    <i class="fas fa-comment mr-2"></i> Chat
+                </button>
+                <button onclick="api.executeCommand('toggleShareScreen')" 
+                        class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded flex items-center">
+                    <i class="fas fa-desktop mr-2"></i> Share Screen
+                </button>
+                <button onclick="confirmEndMeeting()" 
+                        class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded flex items-center">
+                    <i class="fas fa-phone-slash mr-2"></i> End Meeting
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src='https://meet.jit.si/external_api.js'></script>
     <script>
-        const domain = 'meet.jit.si';
-        const options = {
-            roomName: '{{ meeting.meeting_id }}',  // Dynamic meeting ID from Django
-            width: 1000,
-            height: 600,
-            parentNode: document.querySelector('#meet'),
-            lang: 'en',  // Set language to English
-            configOverwrite: {
-                startWithAudioMuted: true,
-                startWithVideoMuted: true,
-                prejoinPageEnabled: true,
-                enableLobbyChat: true,
-                localRecording: true,
-                disableInitialGUM: true,
-            },
-            interfaceConfigOverwrite: {
-                SHOW_CHROME_EXTENSION_BANNER: false,
-                TOOLBAR_ALWAYS_VISIBLE: true,
-                SETTINGS_SECTIONS: ['devices', 'language'],
-                SHOW_POWERED_BY: false,
-            },
-            TOOLBAR_BUTTONS: [
-                "microphone", "camera", "desktop", "hangup", "chat", 
-                "raisehand", "participants-pane", "tileview", 
-                "toggle-camera", "invite", "videoquality", "livestreaming", 
-                "mute-everyone", "mute-video-everyone", "sharedvideo", 
-                "shareaudio", "select-background", "stats", "settings", "filmstrip"
-            ],
-        };
-        const api = new JitsiMeetExternalAPI(domain, options);
+        // Global API reference
+        let api;
+
+        // Initialize Jitsi Meet
+        function initializeJitsi() {
+            const domain = 'meet.jit.si';
+            const options = {
+                roomName: '{{ meeting.meeting_id }}',
+                width: '100%',
+                height: '100%',
+                parentNode: document.querySelector('#meet'),
+                lang: 'en',
+                configOverwrite: {
+                    startWithAudioMuted: true,
+                    startWithVideoMuted: true,
+                    prejoinPageEnabled: true,
+                    enableLobbyChat: true,
+                    disableInitialGUM: true,
+                    enableNoisyMicDetection: true,
+                    enableClosePage: false, // Prevent leaving the meeting easily
+                    disableRemoteMute: false,
+                    enableWelcomePage: false,
+                    constraints: {
+                        video: {
+                            height: {
+                                ideal: 720,
+                                max: 720,
+                                min: 240
+                            }
+                        }
+                    },
+                    resolution: 720,
+                },
+                interfaceConfigOverwrite: {
+                    APP_NAME: 'MediMeet',
+                    SHOW_CHROME_EXTENSION_BANNER: false,
+                    TOOLBAR_ALWAYS_VISIBLE: true,
+                    SETTINGS_SECTIONS: ['devices', 'language', 'moderator'],
+                    SHOW_POWERED_BY: false,
+                    DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
+                    DISABLE_DOMINANT_SPEAKER_INDICATOR: false,
+                    MOBILE_APP_PROMO: false,
+                },
+                userInfo: {
+                    displayName: '{{ request.user.get_full_name|default:request.user.username }}',
+                    email: '{{ request.user.email }}',
+                }
+            };
+
+            api = new JitsiMeetExternalAPI(domain, options);
+
+            // Event handlers
+            api.on('readyToClose', () => {
+                confirmEndMeeting();
+            });
+
+            api.on('participantRoleChanged', (event) => {
+                if (event.role === 'moderator') {
+                    console.log('You are now a moderator');
+                }
+            });
+
+            api.on('videoConferenceJoined', () => {
+                console.log('Local user joined');
+            });
+
+            api.on('videoConferenceLeft', () => {
+                window.location.href = "{% url 'appointments:detail' meeting.appointment.id %}";
+            });
+        }
+
+        // Helper functions
+        function copyMeetingLink() {
+            const link = `${window.location.origin}{% url 'videoconferencing:meeting' meeting.meeting_id %}`;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Meeting link copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy link. Please try again.');
+            });
+        }
+
+        function toggleFullscreen() {
+            const elem = document.getElementById('meet');
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function confirmEndMeeting() {
+            if (confirm('Are you sure you want to end this meeting for all participants?')) {
+                api.executeCommand('hangup');
+                setTimeout(() => {
+                    window.location.href = "{% url 'appointments:detail' meeting.appointment.id %}";
+                }, 1000);
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeJitsi);
     </script>
-    {% endblock %}
 </body>
 </html>

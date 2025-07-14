@@ -27,23 +27,29 @@ class AESEncryption:
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return self.unpad(cipher.decrypt(enc[16:]).decode("utf-8"))
 
-
-
-
-
 def send_sms(to, message):
+    print(" FAKE SMS SENT")
+    print(f"To      : {to}")
+    print(f"Message : {message}")
+    print("-" * 40)
+    return True
+
+
+
+
+#def send_sms(to, message):
     """
     Sends an SMS notification using Twilio.
     """
-    try:
-        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-        message = client.messages.create(
-            body=message,
-            from_=settings.TWILIO_PHONE_NUMBER,
-            to=to
-        )
-        print(f"SMS sent: {message.sid}")
-        return True
-    except Exception as e:
-        print(f"SMS error: {str(e)}")
-        return False
+    #try:
+    #    client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+    #    message = client.messages.create(
+    #        body=message,
+    #        from_=settings.TWILIO_PHONE_NUMBER,
+    #       to=to
+    #    )
+    #    print(f"SMS sent: {message.sid}")
+    #    return True
+    #except Exception as e:
+       # print(f"SMS error: {str(e)}")
+        #return False

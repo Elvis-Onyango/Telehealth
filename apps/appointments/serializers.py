@@ -4,6 +4,7 @@ from django.utils import timezone
 from datetime import datetime
 from django.db import transaction
 
+from rest_framework.exceptions import ValidationError
 # ========== Hospital Serializer ==========
 class HospitalSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,42 +12,84 @@ class HospitalSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# ========== Appointment Serializer ==========
+# ========== Appointment Serializer ================================================================
+
 from rest_framework import serializers
-from .models import Appointment, Billing
+from .models import Hospital, Appointment, Billing
 from django.utils import timezone
+from datetime import datetime
+from django.db import transaction
+from rest_framework.exceptions import ValidationError
 
 class AppointmentCreateSerializer(serializers.ModelSerializer):
-    payment_method = serializers.CharField(write_only=True)
-    total_fee = serializers.DecimalField(max_digits=10, decimal_places=2, write_only=True)
+    payment_method = serializers.CharField(write_only=True, required=True)
+    total_fee = serializers.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        write_only=True,
+        required=True
+    )
 
     class Meta:
         model = Appointment
-        fields = ['doctor', 'date', 'time', 'type', 'notes', 'reschedule_reason', 'payment_method', 'total_fee']
-    @transaction.atomic
+        fields = [
+            'doctor', 'date', 'time', 'type', 
+            'notes', 'reschedule_reason',
+            'payment_method', 'total_fee'
+        ]
+
+    def validate(self, data):
+        # Date validation
+        if data['date'] < timezone.now().date():
+            raise ValidationError("Appointment date must be in the future")
+        
+        # Time validation
+        appointment_datetime = datetime.combine(data['date'], data['time'])
+        appointment_datetime = timezone.make_aware(appointment_datetime)
+        
+        if appointment_datetime < timezone.now():
+            raise ValidationError("Appointment time must be in the future")
+        
+        return data
+
     def create(self, validated_data):
-        request = self.context['request']
-        patient = request.user.patient_profile  # assumes logged-in user has patient_profile
+        request = self.context.get('request')
+        if not request or not hasattr(request.user, 'patient_profile'):
+            raise ValidationError("Only patients can create appointments")
 
         payment_method = validated_data.pop('payment_method')
         total_fee = validated_data.pop('total_fee')
 
+        # Check for existing appointment
+        if Appointment.objects.filter(
+            doctor=validated_data['doctor'],
+            date=validated_data['date'],
+            time=validated_data['time'],
+            is_active=True
+        ).exists():
+            raise ValidationError("Doctor is already booked at this time")
+
         # Create appointment
-        appointment = Appointment.objects.create(patient=patient, **validated_data)
+        appointment = Appointment.objects.create(
+            patient=request.user.patient_profile,
+            **validated_data
+        )
 
         # Create billing
         Billing.objects.create(
             appointment=appointment,
             total_fee=total_fee,
             payment_method=payment_method,
-            payment_status='paid',
-            payment_date=timezone.now(),
+            payment_status='pending',
             processed_by=request.user
         )
+    def get_video_call_link(self, obj):
+        if hasattr(obj, 'video_call'):
+            return obj.video_call.meeting_link
+        return None
+    
 
         return appointment
-
-
 
 class BillingSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source="appointment.patient.user.get_full_name", read_only=True)
