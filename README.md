@@ -52,9 +52,6 @@ Telehealth is a web-based telemedicine platform that allows patients to consult 
    npm start
    ```
 
-## 📸 Screenshots
-*(Add some UI screenshots here)*
-
 ## 🎯 Future Improvements
 - AI-based diagnosis support
 - Multi-language support
