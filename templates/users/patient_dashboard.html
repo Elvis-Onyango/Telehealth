@@ -1,909 +1,190 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en" class="h-full" id="body">
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
-  <title>Patient Dashboard | Midoctor</title>
-  
-  <!-- Fonts & Icons -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Libraries -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patient dashboard | MiDoctor</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-
-  <style>
-    :root {
-      /* Healthcare Color System */
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --primary-light: #93c5fd;
-      --primary-50: #eff6ff;
-      --secondary: #059669;
-      --accent: #7c3aed;
-      --danger: #dc2626;
-      --warning: #d97706;
-      --info: #2563eb;
-      --success: #059669;
-      
-      /* Typography */
-      font-size: clamp(16px, 1vw, 20px);
-      --text-primary: #1e293b;
-      --text-secondary: #64748b;
-    }
-
-    /* ===== DARK MODE ===== */
-    .dark-mode {
-      --bg-color: #0f172a;
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --card-bg: #1e293b;
-      --card-border: #334155;
-      --primary-50: #1e3a8a;
-    }
-
-    /* ===== BASE STYLES ===== */
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f8fafc;
-      color: var(--text-primary);
-      transition: background-color 0.3s ease, color 0.3s ease;
-      line-height: 1.6;
-    }
-    .dark-mode body {
-      background-color: var(--bg-color);
-    }
-
-    /* ===== LAYOUT ENHANCEMENTS ===== */
-    .container-4k {
-      max-width: 1800px;
-      margin: 0 auto;
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-
-    @media (min-width: 1440px) {
-      .grid-4k {
-        grid-template-columns: 1.5fr 1fr;
-        gap: 2rem;
-      }
-      .metrics-4k {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      }
-    }
-
-    /* ===== COMPONENTS ===== */
-    /* Cards */
-    .dashboard-card {
-      background-color: white;
-      border-radius: 1rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      border: 1px solid #e2e8f0;
-      transition: all 0.3s ease;
-    }
-    .dark-mode .dashboard-card {
-      background-color: var(--card-bg);
-      border-color: var(--card-border);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Chat */
-    .message {
-      max-width: 80%;
-      border-radius: 1rem;
-      padding: 0.75rem 1rem;
-      line-height: 1.5;
-      transition: all 0.2s ease;
-      font-size: 0.9375rem;
-    }
-    .message.user {
-      background: var(--primary);
-      color: white;
-      margin-left: auto;
-      border-bottom-right-radius: 0.25rem;
-    }
-    .message.bot {
-      background: #f1f5f9;
-      color: var(--text-primary);
-      margin-right: auto;
-      border-bottom-left-radius: 0.25rem;
-    }
-    .dark-mode .message.bot {
-      background: #334155;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      background: white;
-      width: 16.5rem;
-      transition: transform 0.3s ease;
-      border-right: 1px solid #e2e8f0;
-    }
-    .dark-mode .sidebar {
-      background: #1e293b;
-      border-right-color: #334155;
-    }
-
-    /* Buttons */
-    .btn-primary {
-      background-color: var(--primary);
-      color: white;
-      transition: all 0.2s ease;
-      font-weight: 500;
-      border-radius: 0.5rem;
-    }
-    .btn-primary:hover {
-      background-color: var(--primary-dark);
-      transform: translateY(-1px);
-    }
-
-    /* ===== UTILITIES ===== */
-    .text-contrast {
-      color: var(--text-primary);
-    }
-    .text-muted {
-      color: var(--text-secondary);
-    }
-    .backdrop-glass {
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-    .smooth-transition {
-      transition: all 0.3s ease;
-    }
-
-    /* Floating Action Button */
-    .fab {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      width: 3.5rem;
-      height: 3.5rem;
-      border-radius: 50%;
-      background-color: var(--primary);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      z-index: 40;
-      transition: all 0.2s ease;
-    }
-    .fab:hover {
-      background-color: var(--primary-dark);
-      transform: translateY(-2px) scale(1.05);
-    }
-
-    /* Chart toggle styles */
-    .chart-container {
-      display: none;
-      animation: fadeIn 0.3s ease-out;
-    }
-    .chart-container.active {
-      display: block;
-    }
-    .toggle-chart-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      background-color: var(--primary-50);
-      color: var(--primary);
-      transition: all 0.2s ease;
-      font-weight: 500;
-      font-size: 0.875rem;
-    }
-    .toggle-chart-btn:hover {
-      background-color: var(--primary-light);
-    }
-    .toggle-chart-btn .material-icons-round {
-      transition: transform 0.3s ease;
-      font-size: 1.125rem;
-    }
-    .toggle-chart-btn.active .material-icons-round {
-      transform: rotate(180deg);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Profile card styles */
-    .profile-card {
-      background-color: white;
-      border-radius: 0.75rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease;
-      border: 1px solid #e2e8f0;
-    }
-    .dark-mode .profile-card {
-      background-color: var(--card-bg);
-      border-color: var(--card-border);
-    }
-    .profile-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    .card-header {
-      padding: 1rem 1.25rem;
-      border-top-left-radius: 0.75rem;
-      border-top-right-radius: 0.75rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: var(--primary-50);
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .dark-mode .card-header {
-      border-bottom-color: #334155;
-    }
-    .card-body {
-      padding: 1.25rem;
-    }
-    .field-label {
-      font-size: 0.8125rem;
-      color: var(--text-secondary);
-      margin-bottom: 0.25rem;
-      font-weight: 500;
-    }
-    .field-value {
-      font-weight: 500;
-      color: var(--text-primary);
-      font-size: 0.9375rem;
-    }
-
-    /* Health indicators */
-    .health-indicator {
-      width: 0.625rem;
-      height: 0.625rem;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 0.375rem;
-    }
-    .indicator-normal {
-      background-color: var(--success);
-    }
-    .indicator-warning {
-      background-color: var(--warning);
-    }
-    .indicator-danger {
-      background-color: var(--danger);
-    }
-    
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      border-radius: 0.5rem;
-      color: var(--text-secondary);
-      transition: all 0.2s ease;
-      font-weight: 500;
-      font-size: 0.9375rem;
-    }
-    .nav-item:hover, .nav-item.active {
-      color: var(--primary);
-      background-color: var(--primary-50);
-    }
-    
-    .status-pill {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-    .status-upcoming {
-      background-color: #dbeafe;
-      color: #1d4ed8;
-    }
-
-    /* Modern spacing enhancements */
-    .section-spacing {
-      margin-bottom: 1.5rem;
-    }
-    .card-spacing {
-      padding: 1.5rem;
-    }
-    .input-spacing {
-      padding: 0.75rem 1rem;
-    }
-    .button-spacing {
-      padding: 0.625rem 1.25rem;
-    }
-
-    /* Modern UI elements */
-    .modern-shadow {
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
-    .modern-border {
-      border-radius: 0.75rem;
-    }
-    .hover-scale {
-      transition: transform 0.2s ease;
-    }
-    .hover-scale:hover {
-      transform: scale(1.02);
-    }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>body{font-family:"DM Sans",sans-serif}h1,h2,h3{font-family:"Manrope",sans-serif}</style>
 </head>
-<body class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-
-  <!-- Mobile Menu Button -->
-  <div class="md:hidden fixed top-4 left-4 z-50">
-    <button id="mobileMenuButton" class="p-2 rounded-lg bg-white shadow-md text-gray-600 hover:bg-gray-100 transition-all smooth-transition dark:bg-gray-800 dark:text-gray-300">
-      <span class="material-icons-round">menu</span>
-    </button>
-  </div>
-
-  <!-- Floating Action Button -->
-  <button class="fab md:hidden hover-scale" onclick="redirectToDoctorPage()">
-    <span class="material-icons-round">video_call</span>
-  </button>
-
-  <div class="flex flex-1">
-    <!-- Sidebar -->
-    <aside id="sidebar" class="sidebar text-gray-800 p-5 fixed h-full transform -translate-x-full md:translate-x-0 z-40 dark:text-gray-200">
-      <div class="flex items-center justify-between mb-8">
-        <h1 class="text-xl font-bold flex items-center gap-2">
-          <span class="material-icons-round text-primary">medical_services</span>
-          <span>Midoctor</span>
-        </h1>
-      </div>
-
-      <!-- User Profile -->
-      <div class="mb-6 flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 modern-border">
-        <img id="profile-picture-nav" src="" alt="Profile" class="w-10 h-10 rounded-full border-2 border-gray-200 dark:border-gray-700 object-cover">
-        <div>
-          <p id="profile-name" class="font-semibold text-sm">Loading...</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Patient</p>
-        </div>
-      </div>
-
-      <!-- Navigation -->
-      <nav class="space-y-1">
-        <a href="#" class="nav-item active">
-          <span class="material-icons-round">dashboard</span>
-          <span>Dashboard</span>
-        </a>
-        <a href="#" class="nav-item">
-          <span class="material-icons-round">event</span>
-          <span>Appointments</span>
-        </a>
-        <button onclick="redirectToDoctorPage()" class="w-full nav-item">
-          <span class="material-icons-round">add_circle</span>
-          <span>Book Appointment</span>
-        </button>
-        <a href="#" class="nav-item">
-          <span class="material-icons-round">medication</span>
-          <span>Medications</span>
-        </a>
-        <div id="communication-btn" data-action="communication" class="hidden">
-          <a href="#" class="nav-item">
-            <span class="material-icons-round">chat</span>
-            <span>Messages</span>
-          </a>
-        </div>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <div class="min-h-screen lg:grid lg:grid-cols-[250px_1fr]">
+    <aside class="flex flex-col border-r border-slate-200 bg-white px-5 py-6 lg:min-h-screen">
+      <a href="{% url 'landing:landing_page' %}" class="flex items-center gap-3 text-xl font-extrabold tracking-tight text-slate-900">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-blue-600 text-white">M</span> MiDoctor
+      </a>
+      <p class="mt-10 px-3 text-xs font-bold uppercase tracking-widest text-slate-400">Your care</p>
+      <nav class="mt-3 space-y-1">
+        <a href="{% url 'users:patient-dashboard' %}" class="flex items-center gap-3 rounded-xl bg-blue-50 px-3 py-3 font-semibold text-blue-700"><span aria-hidden="true">⌂</span> Overview</a>
+        <a href="{% url 'users:doctor-page' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span aria-hidden="true">＋</span> Find a doctor</a>
+        <a href="{% url 'chat-room' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span aria-hidden="true">✉</span> Messages</a>
+        <a href="{% url 'pharmacy:pharmacy' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span aria-hidden="true">＋</span> Pharmacy</a>
+        <a href="#notifications" class="flex items-center justify-between rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span>Notifications</span>{% if unread_notifications_count %}<span id="notification-nav-count" class="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">{{ unread_notifications_count }}</span>{% endif %}</a>
       </nav>
+      <div class="mt-auto hidden rounded-2xl bg-blue-50 p-4 text-sm text-blue-900 lg:block">
+        <p class="font-bold">Need a consultation?</p>
+        <p class="mt-1 text-blue-800">Browse available doctors and book a time that works for you.</p>
+        <a href="{% url 'users:doctor-page' %}" class="mt-3 inline-flex font-bold text-blue-700 hover:underline">Browse doctors <span class="ml-1">→</span></a>
+      </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 md:ml-[260px]">
-      <!-- Navbar -->
-      <header class="navbar bg-white shadow-sm p-4 sticky top-0 z-30 dark:bg-gray-800 modern-shadow">
-        <div class="container-4k flex justify-between items-center">
-          <div class="flex-1 max-w-2xl">
-            <div class="relative">
-              <span class="material-icons-round absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">search</span>
-              <input type="text" id="search-input" placeholder="Search records, medications..." 
-                    class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600 smooth-transition text-sm input-spacing">
-            </div>
-          </div>
-          
-          <div class="flex items-center gap-4 ml-6">
-            <button id="notificationButton" class="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors smooth-transition">
-              <span class="material-icons-round text-gray-600 dark:text-gray-300">notifications</span>
-              <span id="notificationCount" class="absolute top-0 right-0 bg-danger text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
-            </button>
-            
-            <button id="darkModeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors smooth-transition">
-              <span class="material-icons-round text-gray-600 dark:text-gray-300">dark_mode</span>
-            </button>
-          </div>
+    <main class="min-w-0">
+      <header class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
+        <div><p class="text-sm text-slate-500">Patient portal</p><h1 class="text-lg font-extrabold text-slate-900">Your dashboard</h1></div>
+        <div class="flex items-center gap-3">
+          <div class="hidden text-right sm:block"><p class="text-sm font-bold">{{ request.user.get_full_name|default:request.user.username }}</p><p class="text-xs text-slate-500">Patient</p></div>
+          {% if request.user.profile_picture %}
+            <img class="h-10 w-10 rounded-full object-cover" src="{{ request.user.profile_picture.url }}" alt="Profile">
+          {% else %}
+            <span class="grid h-10 w-10 place-items-center rounded-full bg-blue-100 font-bold text-blue-700">{{ request.user.first_name|first|upper }}</span>
+          {% endif %}
+          <form method="post" action="{% url 'users:logout-page' %}">{% csrf_token %}<button type="submit" class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Sign out</button></form>
         </div>
       </header>
 
-      <!-- Dashboard Content -->
-      <div class="container-4k p-5 2xl:p-6">
-        <!-- Welcome Banner -->
-        <div class="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700 modern-border hover-scale">
-          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h2 class="text-2xl font-bold mb-1">Welcome back, <span id="welcome-name" class="text-primary">Patient</span>!</h2>
-              <p class="text-gray-600 dark:text-gray-400">Your health overview for <span id="current-date" class="font-medium text-gray-800 dark:text-gray-200"></span></p>
-            </div>
-            <div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 px-4 py-2 rounded-lg">
-              <span class="material-icons-round text-primary">monitor_heart</span>
-              <span class="font-medium text-sm">Last sync: Just now</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Health Metrics - Compact Version -->
-        <section class="mb-6 section-spacing">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <!-- Steps -->
-            <div class="dashboard-card p-4 hover-scale">
-              <div class="flex items-center gap-3">
-                <div class="bg-blue-100 text-blue-600 p-3 rounded-lg dark:bg-blue-900/30 dark:text-blue-300">
-                  <span class="material-icons-round">directions_walk</span>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Steps</p>
-                  <p class="font-bold text-sm" id="steps">7,523</p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Heart Rate -->
-            <div class="dashboard-card p-4 hover-scale">
-              <div class="flex items-center gap-3">
-                <div class="bg-red-100 text-red-600 p-3 rounded-lg dark:bg-red-900/30 dark:text-red-300">
-                  <span class="material-icons-round">favorite</span>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Heart Rate</p>
-                  <p class="font-bold text-sm" id="heart-rate">72 bpm</p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Sleep -->
-            <div class="dashboard-card p-4 hover-scale">
-              <div class="flex items-center gap-3">
-                <div class="bg-indigo-100 text-indigo-600 p-3 rounded-lg dark:bg-indigo-900/30 dark:text-indigo-300">
-                  <span class="material-icons-round">bedtime</span>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Sleep</p>
-                  <p class="font-bold text-sm" id="sleep">6.5 hrs</p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Hydration -->
-            <div class="dashboard-card p-4 hover-scale">
-              <div class="flex items-center gap-3">
-                <div class="bg-cyan-100 text-cyan-600 p-3 rounded-lg dark:bg-cyan-900/30 dark:text-cyan-300">
-                  <span class="material-icons-round">local_drink</span>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Hydration</p>
-                  <p class="font-bold text-sm" id="hydration">1.8 L</p>
-                </div>
-              </div>
+      <div class="mx-auto max-w-7xl space-y-7 px-5 py-8 sm:px-8">
+        <section class="overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-600 p-6 text-white shadow-lg shadow-blue-900/10 sm:p-8">
+          <div class="flex flex-wrap items-end justify-between gap-5">
+            <div><p class="text-sm font-semibold text-blue-100">Your health, made simpler</p><h2 class="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">Welcome, {{ request.user.first_name|default:request.user.username }}.</h2><p class="mt-3 max-w-xl text-blue-100">Keep track of your appointments and stay in touch with your care team.</p></div>
+            <div class="flex flex-wrap gap-3">
+              <a href="{% url 'chat-room' %}" class="rounded-xl border border-white/40 px-5 py-3 font-bold text-white hover:bg-white/10">Messages</a>
+              <a href="{% url 'users:doctor-page' %}" class="rounded-xl bg-white px-5 py-3 font-bold text-blue-700 shadow-sm hover:bg-blue-50">Book an appointment <span class="ml-2">→</span></a>
             </div>
           </div>
         </section>
-  
-        <!-- Loading indicator template (hidden by default) -->
-        <template id="loading-template">
-          <div class="text-center py-16">
-            <i class="fas fa-spinner fa-spin text-3xl mb-2 text-blue-500"></i>
-            <p class="text-gray-600">Loading...</p>
-          </div>
-        </template>
 
-        <!-- Error message template (hidden by default) -->
-        <template id="error-template">
-          <div class="text-center py-16 text-red-500">
-            <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
-            <p class="error-message">Error loading content</p>
-          </div>
-        </template>
+        <section class="grid gap-4 sm:grid-cols-3" aria-label="Appointment summary">
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Upcoming appointments</p><p class="mt-2 text-3xl font-extrabold text-slate-900">{{ upcoming_count }}</p></article>
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Appointments on record</p><p class="mt-2 text-3xl font-extrabold text-slate-900">{{ appointments_count }}</p></article>
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Payments recorded</p><p class="mt-2 text-3xl font-extrabold text-slate-900">KSh {{ paid_total|floatformat:2 }}</p></article>
+        </section>
 
-        <!-- Main Grid -->
-        <div class="grid-4k grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
-          <!-- Left Column -->
-          <div class="space-y-6">
-            <!-- Profile Section -->
-            <section class="section-spacing">
-              <div class="dashboard-card p-5 card-spacing hover-scale">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-lg font-semibold">My Health Profile</h3>
-                  <button class="text-primary hover:text-primary-dark flex items-center gap-1 text-sm transition-colors smooth-transition">
-                    <span class="font-medium">Edit</span>
-                    <span class="material-icons-round text-base">edit</span>
-                  </button>
-                </div>
-                <div id="profile-cards" class="grid grid-cols-1 lg:grid-cols-1 gap-4">
-                  <!-- Dynamically populated by profileHandler.renderProfileCards() -->
-                </div>
-              </div>
-            </section>
-
-            <!-- Health Data -->
-            <section class="section-spacing">
-              <div class="dashboard-card p-5 card-spacing hover-scale">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-lg font-semibold">Health Analytics</h3>
-                  <button id="toggleChartsBtn" class="toggle-chart-btn">
-                    <span>Show Charts</span>
-                    <span class="material-icons-round">expand_more</span>
-                  </button>
-                </div>
-
-                <div id="chartsContainer" class="chart-container">
-                  <div class="space-y-5">
-                    <!-- Heart Rate Chart -->
-                    <div>
-                      <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-medium text-sm">Heart Rate Trends</h4>
-                        <div class="flex gap-1">
-                          <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 smooth-transition">
-                            <span class="material-icons-round text-gray-500 text-sm">calendar_today</span>
-                          </button>
-                        </div>
-                      </div>
-                      <div class="h-60">
-                        <canvas id="healthMetricsChart"></canvas>
-                      </div>
-                    </div>
-                    
-                    <!-- Medication Chart -->
-                    <div>
-                      <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-medium text-sm">Medication History</h4>
-                        <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 smooth-transition">
-                          <span class="material-icons-round text-gray-500 text-sm">more_vert</span>
-                        </button>
-                      </div>
-                      <div class="h-60">
-                        <canvas id="medicationHistoryChart"></canvas>
-                      </div>
-                    </div>
+        <section class="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+          <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+              <div><h2 class="text-lg font-extrabold text-slate-900">Upcoming appointments</h2><p class="mt-1 text-sm text-slate-500">Your scheduled consultations</p></div>
+              <a href="{% url 'users:doctor-page' %}" class="text-sm font-bold text-blue-700 hover:underline">Book another</a>
+            </div>
+            <div class="divide-y divide-slate-100">
+              {% for appointment in upcoming_appointments %}
+                <div class="flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-6">
+                  <div class="flex min-w-0 items-center gap-4">
+                    <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-center text-blue-700"><span class="text-xs font-bold uppercase">{{ appointment.date|date:"M" }}</span><span class="-mt-2 text-lg font-extrabold">{{ appointment.date|date:"j" }}</span></div>
+                    <div class="min-w-0"><p class="truncate font-bold text-slate-900">Dr. {{ appointment.doctor.user.get_full_name }}</p><p class="mt-1 text-sm text-slate-500">{{ appointment.doctor.specialization }}{% if appointment.hospital %} · {{ appointment.hospital.name }}{% endif %}</p><p class="mt-1 text-sm text-slate-600">{{ appointment.time|time:"g:i A" }} · {{ appointment.get_type_display }}</p></div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="rounded-full px-3 py-1 text-xs font-bold {% if appointment.status == 'confirmed' %}bg-emerald-50 text-emerald-700{% else %}bg-amber-50 text-amber-700{% endif %}">{{ appointment.get_status_display }}</span>
+                    {% if appointment.billing %}<span class="rounded-full px-3 py-1 text-xs font-bold {% if appointment.billing.payment_status == 'paid' %}bg-emerald-50 text-emerald-700{% else %}bg-amber-50 text-amber-700{% endif %}">Payment {{ appointment.billing.get_payment_status_display }}</span>{% endif %}
+                    <a href="{% url 'chat-room' %}?contact={{ appointment.doctor.user_id }}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700 hover:border-blue-600 hover:text-blue-700">Message doctor</a>
+                    {% if appointment.type == "virtual" and appointment.video_call %}
+                      <a href="{% url 'videoconferencing:video_meeting' appointment.video_call.meeting_id %}" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-bold text-white hover:bg-blue-700">Join video visit</a>
+                    {% endif %}
                   </div>
                 </div>
-              </div>
-            </section>
-          </div>
+              {% empty %}
+                <div class="px-6 py-12 text-center"><div class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-xl text-slate-500">＋</div><h3 class="mt-4 font-bold text-slate-900">Nothing scheduled yet</h3><p class="mt-1 text-sm text-slate-500">Find a doctor to book your first appointment.</p><a href="{% url 'users:doctor-page' %}" class="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700">Find a doctor</a></div>
+              {% endfor %}
+            </div>
+          </article>
 
-<!-- Right Column -->
-<div class="space-y-6">
-  <!-- Calendar -->
-  <section class="section-spacing">
-    <div class="dashboard-card p-5 card-spacing hover-scale">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">Appointments</h3>
-        <button onclick="redirectToDoctorPage()" class="btn-primary flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm button-spacing">
-          <span class="material-icons-round text-base">add</span>
-          <span>New</span>
-        </button>
-      </div>
-      <div class="min-h-[400px]">
-        <div id="calendar"></div>
-      </div>
-    </div>
-  </section>
-</div>
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-start justify-between"><div><h2 class="text-lg font-extrabold text-slate-900">Your care team</h2><p class="mt-1 text-sm text-slate-500">Doctors connected to your care</p></div><a href="{% url 'users:doctor-page' %}" class="text-sm font-bold text-blue-700 hover:underline">Find</a></div>
+            <div class="mt-5 space-y-3">
+              {% for doctor in doctors %}
+                <div class="flex items-center gap-3 rounded-xl border border-slate-100 p-3"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-indigo-50 font-bold text-indigo-700">{{ doctor.user.first_name|first|upper }}</span><div class="min-w-0"><p class="truncate font-bold text-slate-900">Dr. {{ doctor.user.get_full_name }}</p><p class="truncate text-sm text-slate-500">{{ doctor.specialization }}{% if doctor.hospital %} · {{ doctor.hospital.name }}{% endif %}</p></div></div>
+              {% empty %}
+                <div class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">You don’t have a doctor assigned yet. Browse the directory to find a clinician.</div><a href="{% url 'users:doctor-page' %}" class="inline-flex font-bold text-blue-700 hover:underline">Browse doctors →</a>
+              {% endfor %}
+            </div>
+          </article>
+        </section>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize calendar
-  const calendarEl = document.getElementById('calendar');
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay'
-    },
-    eventDidMount: function(info) {
-      // Add status indicator dot
-      const dot = document.createElement('span');
-      dot.className = `health-indicator indicator-${info.event.extendedProps.status}`;
-      info.el.querySelector('.fc-event-title').prepend(dot);
-    },
-    eventClick: function(info) {
-      showAppointmentDetails(info.event);
-    }
-  });
+        <section class="grid gap-6 xl:grid-cols-2">
+          <article id="notifications" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-center justify-between"><div><h2 class="text-lg font-extrabold text-slate-900">Notifications</h2><p class="mt-1 text-sm text-slate-500">Updates about your care</p></div><span id="unread-notifications-count" class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{{ unread_notifications_count }} unread</span></div>
+            <p id="notification-error" class="hidden mt-3 text-sm text-red-700" role="alert"></p>
+            <ul class="mt-4 divide-y divide-slate-100">
+              {% for notification in notifications %}
+                <li class="flex items-start justify-between gap-3 py-3" data-notification-row="{{ notification.pk }}">
+                  <div><p class="text-sm {% if not notification.is_read %}font-bold text-slate-900{% else %}text-slate-600{% endif %}">{{ notification.message }}</p><time class="mt-1 block text-xs text-slate-400">{{ notification.created_at|date:"M j, Y · g:i A" }}</time></div>
+                  {% if not notification.is_read %}<button type="button" data-mark-notification-read="{{ notification.pk }}" class="shrink-0 text-xs font-bold text-blue-700 hover:underline">Mark read</button>{% endif %}
+                </li>
+              {% empty %}<li class="py-4 text-sm text-slate-500">You’re all caught up. New updates will appear here.</li>{% endfor %}
+            </ul>
+          </article>
 
-  // Fetch appointments from API
-  fetchAppointments().then(appointments => {
-    appointments.forEach(appointment => {
-      calendar.addEvent({
-        title: `${appointment.doctor_name} - ${appointment.type}`,
-        start: `${appointment.date}T${appointment.time}`,
-        extendedProps: {
-          status: appointment.status,
-          type: appointment.type,
-          doctor: appointment.doctor_name,
-          patient: appointment.patient_name,
-          notes: appointment.notes
-        },
-        color: getStatusColor(appointment.status)
-      });
-    });
-    calendar.render();
-  });
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div><h2 class="text-lg font-extrabold text-slate-900">Medical history</h2><p class="mt-1 text-sm text-slate-500">Your saved health information</p></div>
+            {% if medical_history %}
+              <dl class="mt-4 space-y-3 text-sm">
+                <div><dt class="font-bold text-slate-700">Allergies</dt><dd class="text-slate-600">{{ medical_history.allergies|default:"None recorded" }}</dd></div>
+                <div><dt class="font-bold text-slate-700">Chronic conditions</dt><dd class="text-slate-600">{{ medical_history.chronic_diseases|default:"None recorded" }}</dd></div>
+                <div><dt class="font-bold text-slate-700">Past surgeries</dt><dd class="text-slate-600">{{ medical_history.past_surgeries|default:"None recorded" }}</dd></div>
+              </dl>
+            {% else %}<p class="mt-4 text-sm text-slate-500">No medical history has been added yet.</p>{% endif %}
+          </article>
+        </section>
 
-  // Status color mapping
-  function getStatusColor(status) {
-    const colors = {
-      'pending': '#F59E0B',    // amber
-      'confirmed': '#10B981',  // emerald
-      'cancelled': '#EF4444',  // red
-      'completed': '#3B82F6'   // blue
-    };
-    return colors[status.toLowerCase()] || '#6B7280';
-  }
+        <section class="grid gap-6 xl:grid-cols-2">
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-center justify-between"><div><h2 class="text-lg font-extrabold text-slate-900">Recent prescriptions & reports</h2><p class="mt-1 text-sm text-slate-500">Your latest clinical records</p></div></div>
+            <div class="mt-4 space-y-3">
+              {% for prescription in prescriptions %}
+                <div class="rounded-xl border border-slate-100 p-3"><p class="font-bold text-slate-800">Prescription · Dr. {{ prescription.doctor.user.get_full_name }}</p><p class="mt-1 text-xs text-slate-500">{{ prescription.date_issued|date:"M j, Y" }}</p><p class="mt-2 break-words text-sm text-slate-600">{{ prescription.get_decrypted_prescription|pprint }}</p></div>
+              {% endfor %}
+              {% for report in medical_reports %}
+                <div class="rounded-xl border border-slate-100 p-3"><p class="font-bold text-slate-800">Medical report · Dr. {{ report.doctor.user.get_full_name|default:"Care team" }}</p><p class="mt-1 text-xs text-slate-500">{{ report.date_issued|date:"M j, Y" }}</p><p class="mt-2 text-sm text-slate-600">{{ report.get_decrypted_diagnosis|default:"Report available" }}</p>{% if report.report_file %}<a class="mt-2 inline-block text-sm font-bold text-blue-700 hover:underline" href="{% url 'medical-report-download' report.pk %}">Download report file</a>{% endif %}</div>
+              {% empty %}{% if not prescriptions %}<p class="text-sm text-slate-500">No prescriptions or reports yet.</p>{% endif %}{% endfor %}
+            </div>
+          </article>
 
-  // Fetch appointments from your API
-  async function fetchAppointments() {
-    try {
-      const response = await fetch('/api/appointments/', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch appointments');
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-      return [];
-    }
-  }
-
-  // Show appointment details
-  function showAppointmentDetails(event) {
-    // Create a modal or use your existing modal system
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    modal.innerHTML = `
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">Appointment Details</h3>
-          <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-500 hover:text-gray-700">
-            <span class="material-icons-round">close</span>
-          </button>
-        </div>
-        <div class="space-y-4">
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Doctor</p>
-            <p class="font-medium">${event.extendedProps.doctor}</p>
-          </div>
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Date & Time</p>
-            <p class="font-medium">${event.start.toLocaleString()}</p>
-          </div>
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Status</p>
-            <p class="font-medium">
-              <span class="status-pill status-${event.extendedProps.status.toLowerCase()}">
-                ${event.extendedProps.status}
-              </span>
-            </p>
-          </div>
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Type</p>
-            <p class="font-medium">${event.extendedProps.type}</p>
-          </div>
-          ${event.extendedProps.notes ? `
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Notes</p>
-            <p class="font-medium">${event.extendedProps.notes}</p>
-          </div>
-          ` : ''}
-        </div>
-        <div class="mt-6 flex justify-end gap-2">
-          <button onclick="this.parentElement.parentElement.remove()" class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
-            Close
-          </button>
-          ${event.extendedProps.status === 'pending' ? `
-          <button onclick="cancelAppointment('${event.id}')" class="px-4 py-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300">
-            Cancel
-          </button>
-          ` : ''}
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
-});
-</script>
-
-<style>
-/* Add these styles to your existing CSS */
-.fc-event {
-  cursor: pointer;
-  border-radius: 0.375rem;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
-  margin-bottom: 0.25rem;
-}
-
-.fc-event-title {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-
-.status-pill {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.status-pending {
-  background-color: #FEF3C7;
-  color: #92400E;
-}
-
-.status-confirmed {
-  background-color: #D1FAE5;
-  color: #065F46;
-}
-
-.status-cancelled {
-  background-color: #FEE2E2;
-  color: #991B1B;
-}
-
-.status-completed {
-  background-color: #DBEAFE;
-  color: #1E40AF;
-}
-</style>
-            
-            <!-- Medications -->
-            <section class="section-spacing">
-              <div class="dashboard-card p-5 card-spacing hover-scale">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-lg font-semibold">Current Medications</h3>
-                  <button id="refreshMedsBtn" class="text-primary hover:text-primary-dark flex items-center gap-1 text-sm">
-                    <span class="material-icons-round text-base">refresh</span>
-                  </button>
-                </div>
-                
-                <div id="medications-container">
-                  <!-- Medications will load here -->
-                  <div class="flex justify-center py-8">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-            
-            <!-- Health Assistant -->
-            <section class="section-spacing">
-              <div class="dashboard-card p-5 card-spacing hover-scale">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-lg font-semibold">Health Assistant</h3>
-                  <div class="flex gap-1">
-                    <button class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 smooth-transition">
-                      <span class="material-icons-round text-gray-500 text-sm">history</span>
-                    </button>
-                  </div>
-                </div>
-                <div id="chatbot-messages" class="h-[300px] overflow-y-auto p-3 space-y-3 mb-4">
-                  <div class="message bot">
-                    <div class="message-content">Hello! I'm your Health Assistant. How can I help you today?</div>
-                    <div class="message-time text-xs mt-1 opacity-70">Today, 10:00 AM</div>
-                  </div>
-                </div>
-                <div class="flex gap-2">
-                  <input type="text" id="chatbot-input-field" 
-                        class="flex-1 p-3 border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 smooth-transition text-sm input-spacing" 
-                        placeholder="Describe symptoms or ask questions...">
-                  <button onclick="sendMessage()" class="btn-primary p-3 rounded-lg button-spacing">
-                    <span class="material-icons-round text-base">send</span>
-                  </button>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-center justify-between gap-3"><div><h2 class="text-lg font-extrabold text-slate-900">Pharmacy orders</h2><p class="mt-1 text-sm text-slate-500">Track your recent orders</p></div><a href="{% url 'pharmacy:pharmacy' %}" class="text-sm font-bold text-blue-700 hover:underline">Browse pharmacy →</a></div>
+            <div class="mt-4 space-y-3">
+              {% for order in pharmacy_orders %}
+                <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-3"><div><p class="font-bold text-slate-800">Order #{{ order.pk }}</p><p class="mt-1 text-xs text-slate-500">{{ order.ordered_at|date:"M j, Y" }} · {{ order.items.count }} item{{ order.items.count|pluralize }}</p><p class="mt-1 text-sm text-slate-600">KSh {{ order.total_price|floatformat:2 }}{% if order.payment %} · {% if order.payment.is_successful %}Paid{% else %}Payment pending{% endif %}{% endif %}</p></div><span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">{{ order.get_status_display }}</span></div>
+              {% empty %}<p class="text-sm text-slate-500">No pharmacy orders yet.</p>{% endfor %}
+            </div>
+          </article>
+        </section>
       </div>
     </main>
   </div>
-
-  <!-- Footer -->
-  <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-6 smooth-transition">
-    <div class="container-4k px-5">
-      <div class="flex flex-col md:flex-row justify-between items-center">
-        <div class="mb-4 md:mb-0">
-          <h2 class="text-lg font-bold flex items-center gap-2">
-            <span class="material-icons-round text-primary text-base">healing</span>
-            <span>Midoctor</span>
-          </h2>
-          <p class="text-gray-500 dark:text-gray-400 text-xs mt-1">Advanced telehealth platform</p>
-        </div>
-        <div class="flex flex-wrap gap-3 justify-center">
-          <a href="#" class="text-gray-500 hover:text-primary transition-colors smooth-transition text-xs">Privacy</a>
-          <a href="#" class="text-gray-500 hover:text-primary transition-colors smooth-transition text-xs">Terms</a>
-          <a href="#" class="text-gray-500 hover:text-primary transition-colors smooth-transition text-xs">Providers</a>
-          <a href="#" class="text-gray-500 hover:text-primary transition-colors smooth-transition text-xs">Support</a>
-        </div>
-      </div>
-      <div class="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
-        &copy; 2025 Midoctor. HIPAA-compliant telehealth services.
-      </div>
-    </div>
-  </footer>
-
-  <!-- JavaScript -->
-  <script type='module' src="{% static 'js/patient_dashboard.js' %}" defer></script>
-  <script src="{% static 'js/patient_messaging.js' %}" defer></script>
+  <form id="notification-csrf" class="hidden">{% csrf_token %}</form>
   <script>
-    // Fluid typography controller
-    function adjustLayout() {
-      // Font scaling
-      const baseSize = Math.min(Math.max(window.innerWidth / 100, 16), 22);
-      document.documentElement.style.fontSize = `${baseSize}px`;
-      
-      // Container padding adjustment
-      const main = document.querySelector('main');
-      if (window.innerWidth >= 1920) {
-        main.style.paddingLeft = '4rem';
-        main.style.paddingRight = '4rem';
-      } else {
-        main.style.paddingLeft = '';
-        main.style.paddingRight = '';
-      }
-    }
-
-    // Initialize
-    window.addEventListener('load', adjustLayout);
-    window.addEventListener('resize', adjustLayout);
-
-    // Current date
-    document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', month: 'long', day: 'numeric' 
+    const notificationCsrfToken = document.querySelector("#notification-csrf [name=csrfmiddlewaretoken]").value;
+    document.querySelectorAll("[data-mark-notification-read]").forEach(button => {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const response = await fetch(`/api/notifications/${button.dataset.markNotificationRead}/read/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": notificationCsrfToken },
+          });
+          if (!response.ok) throw new Error("Could not update notification.");
+          const row = button.closest("[data-notification-row]");
+          row.querySelector("p").classList.remove("font-bold", "text-slate-900");
+          row.querySelector("p").classList.add("text-slate-600");
+          button.remove();
+          const count = document.getElementById("unread-notifications-count");
+          const unread = Math.max(0, Number.parseInt(count.textContent, 10) - 1);
+          count.textContent = `${unread} unread`;
+          const navCount = document.getElementById("notification-nav-count");
+          if (navCount) {
+            if (unread) navCount.textContent = unread;
+            else navCount.remove();
+          }
+        } catch {
+          button.disabled = false;
+          const error = document.getElementById("notification-error");
+          error.textContent = "Could not mark this notification as read. Please retry.";
+          error.classList.remove("hidden");
+        }
+      });
     });
-
-    // Mobile menu toggle
-    document.getElementById('mobileMenuButton').addEventListener('click', function() {
-      document.getElementById('sidebar').classList.toggle('-translate-x-full');
-    });
-
-    // Chart toggle functionality
-    document.getElementById('toggleChartsBtn').addEventListener('click', function() {
-      this.classList.toggle('active');
-      const container = document.getElementById('chartsContainer');
-      container.classList.toggle('active');
-      
-      // Update button text
-      const isActive = container.classList.contains('active');
-      this.querySelector('span:first-child').textContent = isActive ? 'Hide Charts' : 'Show Charts';
-      
-      // Redraw charts when shown (prevents rendering issues)
-      if (isActive && typeof window.heartRateChart !== 'undefined') {
-        window.heartRateChart.update();
-        window.medHistoryChart.update();
-      }
-    });
-
-    // Global function exposure
-    window.sendMessage = function() {
-      if (typeof chatbotHandler !== 'undefined') {
-        chatbotHandler.sendMessage();
-      }
-    };
-    window.redirectToDoctorPage = function() {
-      if (typeof navigationHandler !== 'undefined') {
-        navigationHandler.redirectToDoctorPage();
-      }
-    };
   </script>
 </body>
 </html>

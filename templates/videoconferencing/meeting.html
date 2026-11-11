@@ -202,13 +202,13 @@
             });
 
             api.on('videoConferenceLeft', () => {
-                window.location.href = "{% url 'appointments:detail' meeting.appointment.id %}";
+                window.location.href = "{% if request.user.role == 'doctor' %}{% url 'users:doctor-dashboard' %}{% else %}{% url 'users:patient-dashboard' %}{% endif %}";
             });
         }
 
         // Helper functions
         function copyMeetingLink() {
-            const link = `${window.location.origin}{% url 'videoconferencing:meeting' meeting.meeting_id %}`;
+            const link = `${window.location.origin}{% url 'videoconferencing:video_meeting' meeting.meeting_id %}`;
             navigator.clipboard.writeText(link).then(() => {
                 alert('Meeting link copied to clipboard!');
             }).catch(err => {
@@ -232,7 +232,7 @@
             if (confirm('Are you sure you want to end this meeting for all participants?')) {
                 api.executeCommand('hangup');
                 setTimeout(() => {
-                    window.location.href = "{% url 'appointments:detail' meeting.appointment.id %}";
+                    window.location.href = "{% if request.user.role == 'doctor' %}{% url 'users:doctor-dashboard' %}{% else %}{% url 'users:patient-dashboard' %}{% endif %}";
                 }, 1000);
             }
         }

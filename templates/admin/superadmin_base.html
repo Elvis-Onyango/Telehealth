@@ -1,0 +1,100 @@
+<div class="admin-dashboard-shell" id="admin-home">
+  <aside class="admin-dashboard-sidebar">
+    <div class="admin-dashboard-brand">
+      <span class="admin-dashboard-logo">M</span>
+      <div>
+        <span class="admin-dashboard-brand-copy">MiDoctor</span>
+        <span class="admin-dashboard-brand-tag">Care network administration</span>
+      </div>
+    </div>
+    <nav class="admin-dashboard-nav" aria-label="Platform overview sections">
+      <button type="button" data-admin-target="overview" aria-current="page">Platform overview</button>
+      <button type="button" data-admin-target="appointments">Appointments</button>
+      <button type="button" data-admin-target="billing">Paid billing</button>
+      <button type="button" data-admin-target="staff">People</button>
+    </nav>
+  </aside>
+
+  <main class="admin-dashboard-content">
+    <section class="admin-dashboard-panel" data-admin-panel="overview">
+      <div class="admin-dashboard-hero">
+        <p>System workspace</p>
+        <h2>Care network administration</h2>
+      </div>
+
+      <div class="admin-dashboard-stats">
+        <div class="admin-dashboard-stat">
+          <span class="admin-dashboard-stat-label">Users</span>
+          <span class="admin-dashboard-stat-value">{{ admin_dashboard_stats.users }}</span>
+        </div>
+        <div class="admin-dashboard-stat">
+          <span class="admin-dashboard-stat-label">Appointments</span>
+          <span class="admin-dashboard-stat-value">{{ admin_dashboard_stats.appointments }}</span>
+        </div>
+        <div class="admin-dashboard-stat">
+          <span class="admin-dashboard-stat-label">Hospitals</span>
+          <span class="admin-dashboard-stat-value">{{ admin_dashboard_stats.hospitals }}</span>
+        </div>
+        <div class="admin-dashboard-stat">
+          <span class="admin-dashboard-stat-label">Paid billing</span>
+          <span class="admin-dashboard-stat-value">KSh {{ admin_dashboard_stats.billing_paid_total|floatformat:2 }}</span>
+        </div>
+      </div>
+
+      <div class="admin-dashboard-section">
+        <h3>Operational snapshot</h3>
+        <div class="admin-dashboard-grid">
+          <div class="admin-dashboard-card">
+            <h4>Appointments</h4>
+            <strong>{{ admin_dashboard_stats.appointments }}</strong>
+            <small>Scheduled and live care events</small>
+          </div>
+          <div class="admin-dashboard-card">
+            <h4>Paid billing</h4>
+            <strong>KSh {{ admin_dashboard_stats.billing_paid_total|floatformat:2 }}</strong>
+            <small>Collected from successful payments</small>
+          </div>
+          <div class="admin-dashboard-card">
+            <h4>Registered users</h4>
+            <strong>{{ admin_dashboard_stats.users }}</strong>
+            <small>Across patient and staff roles</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-dashboard-panel" data-admin-panel="appointments">
+      <h3>Appointments</h3>
+      <p>Follow the care schedule across every hospital and patient route.</p>
+    </section>
+
+    <section class="admin-dashboard-panel" data-admin-panel="billing">
+      <h3>Paid billing</h3>
+      <p>Track revenue and payment completion across the network.</p>
+    </section>
+
+    <section class="admin-dashboard-panel" data-admin-panel="staff">
+      <h3>People</h3>
+      <p>Manage the network of staff, hospital administrators, and patient accounts.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const navButtons = document.querySelectorAll('[data-admin-target]');
+    const panels = document.querySelectorAll('[data-admin-panel]');
+
+    navButtons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        const target = button.getAttribute('data-admin-target');
+        navButtons.forEach((item) => item.setAttribute('aria-current', item === button ? 'page' : 'false'));
+
+        panels.forEach((panel) => {
+          const visible = panel.getAttribute('data-admin-panel') === target;
+          panel.style.display = visible ? 'block' : 'none';
+        });
+      });
+    });
+  });
+</script>

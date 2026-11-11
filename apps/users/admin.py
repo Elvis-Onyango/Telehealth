@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, DoctorProfile, PatientProfile, Weekday
+from .models import User, DoctorProfile, PatientProfile, Weekday, DoctorAvailability
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -17,11 +17,27 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Personal Info', {'fields': ('first_name', 'last_name', 'email', 'phone', 'address', 'gender', 'profile_picture')}),
-        ('Permissions', {'fields': ('is_staff', 'is_active', 'role')}),
+        ('Permissions', {
+            'fields': (
+                'is_active',
+                'is_staff',
+                'is_superuser',
+                'role',
+                'groups',
+                'user_permissions',
+            )
+        }),
         ('Important Dates', {'fields': ('last_login', 'date_joined')}),
     )
 
 admin.site.register(User, CustomUserAdmin)
+
+
+@admin.register(DoctorAvailability)
+class DoctorAvailabilityAdmin(admin.ModelAdmin):
+    list_display = ("doctor", "day", "start_time", "end_time")
+    list_filter = ("day",)
+    search_fields = ("doctor__user__username", "doctor__user__last_name")
 
 
 # =================== Weekday Admin ===================

@@ -7,7 +7,7 @@ from twilio.rest import Client
 
 class AESEncryption:
     def __init__(self):
-        self.key = settings.SECRET_KEY[:32].encode("utf-8")  # 32-byte key
+        self.key = settings.DATA_ENCRYPTION_KEY[:32].encode("utf-8")
 
     def pad(self, text):
         return text + (16 - len(text) % 16) * chr(16 - len(text) % 16)

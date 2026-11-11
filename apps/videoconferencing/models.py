@@ -5,7 +5,13 @@ import uuid
 from apps.appointments.models import Appointment
 
 class VideoCall(models.Model):
-    appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE, related_name='video_call')
+    appointment = models.OneToOneField(
+        Appointment,
+        on_delete=models.CASCADE,
+        related_name='video_call',
+        null=True,
+        blank=True,
+    )
     host = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="hosted_calls", on_delete=models.CASCADE)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="video_calls")
     meeting_link = models.URLField(blank=True)
@@ -24,6 +30,5 @@ class VideoCall(models.Model):
 
 
   
-
 
 

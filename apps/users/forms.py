@@ -46,11 +46,10 @@ class DoctorProfileUpdateForm(forms.ModelForm):
     
     class Meta:
         model = DoctorProfile
-        fields = ['specialization', 'hospital', 'available_days', 'consultation_fee', 
+        fields = ['specialization', 'available_days', 'consultation_fee',
                  'years_of_experience', 'license_number', 'certifications', 'profile_picture']
         widgets = {
             'consultation_fee': forms.NumberInput(attrs={'step': '100'}),
             'years_of_experience': forms.NumberInput(attrs={'min': '2'}),
             'license_number': forms.TextInput(attrs={'placeholder': 'Medical license number'}),
         }
-

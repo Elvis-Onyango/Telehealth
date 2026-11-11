@@ -1,14 +1,19 @@
 import os
-import django
 from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack  
-from channels.layers import get_channel_layer
-
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'telemedicine_project.settings')
-django.setup()
 
-application = get_asgi_application()
+django_application = get_asgi_application()
 
-channel_layer = get_channel_layer() 
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.security.websocket import AllowedHostsOriginValidator
+from apps.messaging.routing import websocket_urlpatterns
+
+application = ProtocolTypeRouter(
+    {
+        "http": django_application,
+        "websocket": AllowedHostsOriginValidator(
+            URLRouter(websocket_urlpatterns)
+        ),
+    }
+)

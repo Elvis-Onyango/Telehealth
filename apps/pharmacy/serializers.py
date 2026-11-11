@@ -17,8 +17,17 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = "__all__"
+        read_only_fields = ["user", "status", "total_price"]
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = "__all__"
+        read_only_fields = [
+            "id",
+            "order",
+            "amount",
+            "transaction_id",
+            "paid_at",
+            "is_successful",
+        ]

@@ -2,15 +2,37 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from django.contrib.messages import constants as messages
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
-# Quick-start development settings - unsuitable for production
-SECRET_KEY = 'django-insecure-=xae!($+ed7^lx@ew39n*d*ld6@tnwcv%vv@vyiy7m6r#oc&)8'
-DEBUG = True
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1']
+
+def env_bool(name, default=False):
+    return os.environ.get(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def env_list(name, default=""):
+    return [value.strip() for value in os.environ.get(name, default).split(",") if value.strip()]
+
+
+DEBUG = env_bool("DJANGO_DEBUG", True)
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is false.")
+    SECRET_KEY = "local-development-only-change-before-deployment"
+DATA_ENCRYPTION_KEY = os.environ.get("DATA_ENCRYPTION_KEY") or SECRET_KEY
+if len(DATA_ENCRYPTION_KEY) < 32:
+    raise ImproperlyConfigured("DATA_ENCRYPTION_KEY must be at least 32 characters long.")
+
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
+CSRF_TRUSTED_ORIGINS = env_list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "http://127.0.0.1,http://localhost",
+)
 
 # Application definition
 INSTALLED_APPS = [
@@ -113,7 +135,7 @@ SIMPLE_JWT = {
 
 # Push Notification Settings (using Firebase Cloud Messaging as example)
 FCM_DJANGO_SETTINGS = {
-    "FCM_SERVER_KEY": "[your-server-key]",
+    "FCM_SERVER_KEY": os.environ.get("FCM_SERVER_KEY", ""),
     "ONE_DEVICE_PER_USER": False,
     "DELETE_INACTIVE_DEVICES": True,
 }
@@ -139,7 +161,10 @@ TEMPLATES = [
 ]
 
 # Email backend
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
 
 # Authentication settings
 AUTH_USER_MODEL = 'users.User'
@@ -159,16 +184,27 @@ CHANNEL_LAYERS = {
 }
 
 # Database configuration
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'telemedicine',
-        'USER': 'postgres',
-        'PASSWORD': 'd8v34qn5',
-        'HOST': 'localhost',
-        'PORT': '5432',
+DB_ENGINE = os.environ.get("DB_ENGINE", "sqlite").strip().lower()
+if DB_ENGINE == "postgresql":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME", "telemedicine"),
+            "USER": os.environ.get("DB_USER", "postgres"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
+        }
     }
-}
+elif DB_ENGINE == "sqlite":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.environ.get("DB_NAME", str(BASE_DIR / "db.sqlite3")),
+        }
+    }
+else:
+    raise ImproperlyConfigured("DB_ENGINE must be either 'sqlite' or 'postgresql'.")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -198,9 +234,9 @@ PASSWORD_HASHERS = [
 LOGIN_URL = "/api/users/login-page/"  # This should match the URL for your custom  login page
 
 
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", not DEBUG)
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
@@ -237,17 +273,17 @@ SITE_ID = 1
 TAILWIND_APP_NAME = 'theme'
 
 # Messaging configuration (Twilio)
-TWILIO_ACCOUNT_SID = "your_account_sid"
-TWILIO_AUTH_TOKEN = "your_auth_token"
-TWILIO_PHONE_NUMBER = "+your_twilio_number"
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "")
 
 # MPESA API configuration
-MPESA_ENV = "sandbox"
-MPESA_CONSUMER_KEY = "your_consumer_key"
-MPESA_CONSUMER_SECRET = "your_consumer_secret"
-MPESA_SHORTCODE = "your_paybill_number"
-MPESA_PASSKEY = "your_passkey"
-MPESA_CALLBACK_URL = "https://yourdomain.com/mpesa/callback/"
+MPESA_ENV = os.environ.get("MPESA_ENV", "sandbox")
+MPESA_CONSUMER_KEY = os.environ.get("MPESA_CONSUMER_KEY", "")
+MPESA_CONSUMER_SECRET = os.environ.get("MPESA_CONSUMER_SECRET", "")
+MPESA_SHORTCODE = os.environ.get("MPESA_SHORTCODE", "")
+MPESA_PASSKEY = os.environ.get("MPESA_PASSKEY", "")
+MPESA_CALLBACK_URL = os.environ.get("MPESA_CALLBACK_URL", "")
 
 # Message tags for Django messages framework
 MESSAGE_TAGS = {
@@ -261,10 +297,9 @@ MESSAGE_TAGS = {
 # mail send
 
 # Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # Example for Gmail
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'onyangoelvis804@gmail.com'  # Your email address
-EMAIL_HOST_PASSWORD = 'dazp lajb bzfh yudc'  # Your email password
-DEFAULT_FROM_EMAIL = 'onyangoelvis804@gmail.com'  # Default sender email
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)

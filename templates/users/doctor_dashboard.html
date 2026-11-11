@@ -1,346 +1,152 @@
-{% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard</title>
-    <!-- CSS and JS Imports (unchanged to prevent conflicts) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doctor dashboard | MiDoctor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>body{font-family:"DM Sans",sans-serif}h1,h2,h3{font-family:"Manrope",sans-serif}</style>
 </head>
-<body class="bg-gray-100 p-4 md:p-6">
-<!-- Top Navigation (improved responsive layout) -->
-<div class="flex flex-col md:flex-row justify-between items-center bg-white shadow-md p-4 rounded-lg gap-4">
-    <h2 class="text-xl md:text-2xl font-bold flex items-center">
-        <i data-lucide="stethoscope" class="w-5 h-5 md:w-6 md:h-6 mr-2 text-blue-600"></i> Doctor Dashboard
-    </h2>
-    <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
-        <!-- Search Bar -->
-        <div class="relative w-full md:w-64">
-            <input type="text" id="search-bar" placeholder="Search patients..." 
-                   class="w-full p-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <i data-lucide="search" class="absolute left-3 top-2.5 md:top-3 w-4 h-4 md:w-5 md:h-5 text-gray-400"></i>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <div class="min-h-screen lg:grid lg:grid-cols-[250px_1fr]">
+    <aside class="flex flex-col border-r border-slate-200 bg-white px-5 py-6 lg:min-h-screen">
+      <a href="{% url 'landing:landing_page' %}" class="flex items-center gap-3 text-xl font-extrabold tracking-tight text-slate-900"><span class="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 text-white">M</span> MiDoctor</a>
+      <p class="mt-10 px-3 text-xs font-bold uppercase tracking-widest text-slate-400">Practice</p>
+      <nav class="mt-3 space-y-1">
+        <a href="{% url 'users:doctor-dashboard' %}" class="flex items-center gap-3 rounded-xl bg-indigo-50 px-3 py-3 font-semibold text-indigo-700"><span aria-hidden="true">⌂</span> Overview</a>
+        <a href="#appointments" class="flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span aria-hidden="true">▦</span> Appointments</a>
+        <a href="#patients" class="flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span aria-hidden="true">♙</span> Patients</a>
+        <a href="{% url 'chat-room' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span aria-hidden="true">✉</span> Messages</a>
+        <a href="{% url 'pharmacy:pharmacy' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span aria-hidden="true">＋</span> Pharmacy</a>
+        <a href="#notifications" class="flex items-center justify-between rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span>Notifications</span>{% if unread_notifications_count %}<span id="notification-nav-count" class="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold text-white">{{ unread_notifications_count }}</span>{% endif %}</a>
+        <a href="{% url 'users:doctor_profile_view' %}" class="flex items-center gap-3 rounded-xl px-3 py-3 font-medium text-slate-600 hover:bg-slate-50"><span aria-hidden="true">◎</span> My profile</a>
+      </nav>
+      <div class="mt-auto hidden rounded-2xl bg-indigo-50 p-4 text-sm text-indigo-900 lg:block"><p class="font-bold">Keep your profile current</p><p class="mt-1 text-indigo-800">Patients use your specialty and availability to find and book with you.</p><a href="{% url 'users:doctor_profile_update' %}" class="mt-3 inline-flex font-bold text-indigo-700 hover:underline">Update profile →</a></div>
+    </aside>
+
+    <main class="min-w-0">
+      <header class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
+        <div><p class="text-sm text-slate-500">Doctor portal</p><h1 class="text-lg font-extrabold text-slate-900">Practice overview</h1></div>
+        <div class="flex items-center gap-3">
+          <div class="hidden text-right sm:block"><p class="text-sm font-bold">Dr. {{ request.user.get_full_name|default:request.user.username }}</p><p class="text-xs text-slate-500">{{ doctor.specialization }}</p></div>
+          <span class="grid h-10 w-10 place-items-center rounded-full bg-indigo-100 font-bold text-indigo-700">{{ request.user.first_name|first|upper }}</span>
+          <form method="post" action="{% url 'users:logout-page' %}">{% csrf_token %}<button type="submit" class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Sign out</button></form>
         </div>
-        
-        <!-- Notification and Profile -->
-        <div class="flex items-center space-x-4">
-            <div id="notification-bell" class="relative cursor-pointer">
-                <i data-lucide="bell" class="w-5 h-5 md:w-6 md:h-6 text-gray-600"></i>
-                <span id="notification-count" class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1">0</span>
-            </div>
-            
-            <!-- Profile Dropdown -->
-            <div class="relative group">
-                <button class="flex items-center space-x-2 focus:outline-none">
-                    {% if user.doctor_profile.profile_picture %}
-                        <img src="{{ user.doctor_profile.profile_picture.url }}" class="w-8 h-8 md:w-9 md:h-9 rounded-full object-cover border-2 border-blue-500">
-                    {% else %}
-                        <div class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-200 flex items-center justify-center border-2 border-blue-500">
-                            <i data-lucide="user" class="w-4 h-4 md:w-5 md:h-5 text-gray-600"></i>
-                        </div>
+      </header>
+
+      <div class="mx-auto max-w-7xl space-y-7 px-5 py-8 sm:px-8">
+        <section class="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-800 p-6 text-white shadow-lg sm:p-8">
+          <p class="text-sm font-semibold text-indigo-200">{% if doctor.hospital %}{{ doctor.hospital.name }}{% else %}Independent practice{% endif %}</p>
+          <div class="mt-2 flex flex-wrap items-end justify-between gap-5">
+            <div><h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl">Good day, Dr. {{ request.user.first_name|default:request.user.username }}.</h2><p class="mt-3 max-w-xl text-indigo-100">Here’s your schedule and patient overview, all in one place.</p></div>
+            <a href="{% url 'users:doctor_profile_update' %}" class="rounded-xl bg-white px-5 py-3 font-bold text-indigo-800 hover:bg-indigo-50">Manage profile</a>
+          </div>
+        </section>
+
+        <section class="grid gap-4 sm:grid-cols-3" aria-label="Practice summary">
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Patients connected</p><p class="mt-2 text-3xl font-extrabold text-slate-900">{{ patients_count }}</p></article>
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Upcoming appointments</p><p class="mt-2 text-3xl font-extrabold text-slate-900">{{ upcoming_count }}</p></article>
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Scheduled for today</p><p class="mt-2 text-3xl font-extrabold text-slate-900">{{ today_count }}</p></article>
+        </section>
+
+        <section class="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+          <article id="appointments" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6"><div><h2 class="text-lg font-extrabold text-slate-900">Your schedule</h2><p class="mt-1 text-sm text-slate-500">Upcoming confirmed and pending consultations</p></div><span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{{ upcoming_count }} upcoming</span></div>
+            <div class="divide-y divide-slate-100">
+              {% for appointment in appointments %}
+                <div class="flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-6">
+                  <div class="flex min-w-0 items-center gap-4">
+                    <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-indigo-50 text-center text-indigo-700"><span class="text-xs font-bold uppercase">{{ appointment.date|date:"M" }}</span><span class="-mt-2 text-lg font-extrabold">{{ appointment.date|date:"j" }}</span></div>
+                    <div class="min-w-0"><p class="truncate font-bold text-slate-900">{{ appointment.patient.user.get_full_name|default:appointment.patient.user.username }}</p><p class="mt-1 text-sm text-slate-500">{{ appointment.time|time:"g:i A" }} · {{ appointment.get_type_display }}{% if appointment.hospital %} · {{ appointment.hospital.name }}{% endif %}</p></div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="rounded-full px-3 py-1 text-xs font-bold {% if appointment.status == 'confirmed' %}bg-emerald-50 text-emerald-700{% else %}bg-amber-50 text-amber-700{% endif %}">{{ appointment.get_status_display }}</span>
+                    {% if appointment.billing %}<span class="rounded-full px-3 py-1 text-xs font-bold {% if appointment.billing.payment_status == 'paid' %}bg-emerald-50 text-emerald-700{% else %}bg-amber-50 text-amber-700{% endif %}">Payment {{ appointment.billing.get_payment_status_display }}</span>{% endif %}
+                    <a href="{% url 'chat-room' %}?contact={{ appointment.patient.user_id }}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700 hover:border-indigo-600 hover:text-indigo-700">Message patient</a>
+                    {% if appointment.type == "virtual" and appointment.video_call %}
+                      <a href="{% url 'videoconferencing:video_meeting' appointment.video_call.meeting_id %}" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white hover:bg-indigo-700">Join video visit</a>
                     {% endif %}
-                    <span class="hidden md:inline font-medium">Dr. {{ user.first_name }}</span>
-                    <i data-lucide="chevron-down" class="w-4 h-4 md:w-5 md:h-5 text-gray-600"></i>
-                </button>
-                
-                <!-- Dropdown Menu -->
-                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 hidden group-hover:block">
-                    <a href="{% url 'users:doctor_profile_view' %}" class="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50">
-                        <i data-lucide="user" class="w-4 h-4 mr-2"></i> My Profile
-                    </a>
-                    <a href="{% url 'users:doctor_profile_update' %}" class="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50">
-                        <i data-lucide="settings" class="w-4 h-4 mr-2"></i> Settings
-                    </a>
-                    <div class="border-t border-gray-200 my-1"></div>
-                    <a href="{% url 'users:logout' %}" class="flex items-center px-4 py-2 text-gray-700 hover:bg-blue-50">
-                        <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Logout
-                    </a>
+                  </div>
                 </div>
+              {% empty %}
+                <div class="px-6 py-12 text-center"><div class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-xl text-slate-500">▦</div><h3 class="mt-4 font-bold text-slate-900">Your schedule is clear</h3><p class="mt-1 text-sm text-slate-500">New appointments will appear here when patients book with you.</p></div>
+              {% endfor %}
             </div>
-        </div>
-    </div>
-</div>
+          </article>
 
-    <div class="grid grid-cols-12 gap-4 mt-6">
-        <!-- Sidebar (improved spacing and typography) -->
-        <div class="col-span-12 md:col-span-3 bg-white shadow-md rounded-lg p-4">
-            <div class="flex flex-col items-center">
-                <img id="profile-picture" src="{% static 'images/doctor.jpeg' %}" 
-                     class="rounded-full w-20 h-20 md:w-24 md:h-24 object-cover border-4 border-blue-100" 
-                     alt="Profile Picture">
-                <h3 class="text-lg md:text-xl font-bold text-center mt-3">Dr <span id="doctor-name"></span></h3>
-                <p class="text-center text-gray-600 text-sm md:text-base" id="specialization"></p>
-                <p class="text-center text-gray-600 text-sm md:text-base flex items-center mt-1">
-                    <i data-lucide="hospital" class="w-4 h-4 mr-1"></i> <span id="hospital-name"></span>
-                </p>
+          <article id="patients" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-start justify-between"><div><h2 class="text-lg font-extrabold text-slate-900">Patients</h2><p class="mt-1 text-sm text-slate-500">Patients connected to your practice</p></div><a href="{% url 'chat-room' %}" class="text-sm font-bold text-indigo-700 hover:underline">Messages</a></div>
+            <div class="mt-5 space-y-3">
+              {% for patient in patients|slice:":8" %}
+                <div class="flex items-center gap-3 rounded-xl border border-slate-100 p-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 font-bold text-slate-700">{{ patient.user.first_name|first|upper }}</span><div class="min-w-0"><p class="truncate font-bold text-slate-900">{{ patient.user.get_full_name|default:patient.user.username }}</p><p class="truncate text-sm text-slate-500">Patient</p></div></div>
+              {% empty %}
+                <div class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Patients assigned to you or booked with you will appear here.</div>
+              {% endfor %}
             </div>
-            
-            <div class="mt-4 space-y-1 text-center">
-                <p class="text-gray-600 text-sm md:text-base flex items-center justify-center">
-                    <i data-lucide="phone" class="w-4 h-4 mr-1"></i> <span id="phone"></span>
-                </p>
-                <p class="text-gray-600 text-sm md:text-base flex items-center justify-center">
-                    <i data-lucide="mail" class="w-4 h-4 mr-1"></i> <span id="email"></span>
-                </p>
+          </article>
+        </section>
+
+        <section class="grid gap-6 xl:grid-cols-2">
+          <article id="notifications" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex items-center justify-between"><div><h2 class="text-lg font-extrabold text-slate-900">Notifications</h2><p class="mt-1 text-sm text-slate-500">Practice and appointment updates</p></div><span id="unread-notifications-count" class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{{ unread_notifications_count }} unread</span></div>
+            <p id="notification-error" class="hidden mt-3 text-sm text-red-700" role="alert"></p>
+            <ul class="mt-4 divide-y divide-slate-100">
+              {% for notification in notifications %}
+                <li class="flex items-start justify-between gap-3 py-3" data-notification-row="{{ notification.pk }}"><div><p class="text-sm {% if not notification.is_read %}font-bold text-slate-900{% else %}text-slate-600{% endif %}">{{ notification.message }}</p><time class="mt-1 block text-xs text-slate-400">{{ notification.created_at|date:"M j, Y · g:i A" }}</time></div>{% if not notification.is_read %}<button type="button" data-mark-notification-read="{{ notification.pk }}" class="shrink-0 text-xs font-bold text-indigo-700 hover:underline">Mark read</button>{% endif %}</li>
+              {% empty %}<li class="py-4 text-sm text-slate-500">No new updates.</li>{% endfor %}
+            </ul>
+          </article>
+
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div><h2 class="text-lg font-extrabold text-slate-900">Recent clinical activity</h2><p class="mt-1 text-sm text-slate-500">Records you created for your care team</p></div>
+              <a href="{% url 'medical-report-create-page' %}" class="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-800">Add lab result</a>
             </div>
-            
-            <!-- Sidebar Navigation (improved hover states) -->
-            <div class="mt-6 space-y-1">
-                <a href="#" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition duration-300 group">
-                    <i data-lucide="home" class="w-5 h-5 mr-2 text-blue-600"></i> 
-                    <span class="group-hover:text-blue-600">Dashboard</span>
-                </a>
-                <a href="#" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition duration-300 group">
-                    <i data-lucide="calendar" class="w-5 h-5 mr-2 text-blue-600"></i> 
-                    <span class="group-hover:text-blue-600">Appointments</span>
-                </a>
-                <a href="#" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition duration-300 group">
-                    <i data-lucide="users" class="w-5 h-5 mr-2 text-blue-600"></i> 
-                    <span class="group-hover:text-blue-600">Patients</span>
-                </a>
-              
-                <a href="#" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition duration-300 group" id="communication-btn">
-                    <i data-lucide="message-circle" class="w-5 h-5 mr-2 text-blue-600"></i> 
-                    <span class="group-hover:text-blue-600">Chat</span>
-                </a>
-
+            <div class="mt-4 space-y-3">
+              {% for prescription in recent_prescriptions %}<div class="rounded-xl border border-slate-100 p-3"><p class="font-bold text-slate-800">Prescription · {{ prescription.patient.user.get_full_name|default:prescription.patient.user.username }}</p><p class="mt-1 text-xs text-slate-500">{{ prescription.date_issued|date:"M j, Y" }}</p></div>{% endfor %}
+              {% for report in recent_medical_reports %}<div class="rounded-xl border border-slate-100 p-3"><p class="font-bold text-slate-800">Medical report · {{ report.patient.user.get_full_name|default:report.patient.user.username }}</p><p class="mt-1 text-xs text-slate-500">{{ report.date_issued|date:"M j, Y" }}</p></div>{% endfor %}
+              {% if not recent_prescriptions and not recent_medical_reports %}<p class="text-sm text-slate-500">Prescriptions and reports you create will appear here.</p>{% endif %}
             </div>
-        </div>
-
-        <!-- Main Content (improved card designs) -->
-        <div class="col-span-12 md:col-span-9 space-y-6">
-            <!-- Statistics Cards (improved visual hierarchy) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500 hover:shadow-lg transition duration-300">
-                    <h3 class="text-base md:text-lg font-semibold text-gray-700">Total Patients</h3>
-                    <p class="text-xl md:text-2xl font-bold text-blue-600 mt-1" id="total-patients">0</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500 hover:shadow-lg transition duration-300">
-                    <h3 class="text-base md:text-lg font-semibold text-gray-700">Consultation Fee</h3>
-                    <p class="text-xl md:text-2xl font-bold text-green-600 mt-1">Ksh <span id="consultation-fee"></span></p>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-purple-500 hover:shadow-lg transition duration-300">
-                    <h3 class="text-base md:text-lg font-semibold text-gray-700">Appointments Today</h3>
-                    <p class="text-xl md:text-2xl font-bold text-purple-600 mt-1" id="appointments-today">0</p>
-                </div>
-            </div>
- 
-
-<!-- Font Awesome for icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<!-- Loading indicator template (hidden by default) -->
-<template id="loading-template">
-  <div class="text-center py-16">
-    <i class="fas fa-spinner fa-spin text-3xl mb-2 text-blue-500"></i>
-    <p class="text-gray-600">Loading...</p>
+          </article>
+        </section>
+      </div>
+    </main>
   </div>
-</template>
-
-<!-- Error message template (hidden by default) -->
-<template id="error-template">
-  <div class="text-center py-16 text-red-500">
-    <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
-    <p class="error-message">Error loading content</p>
-  </div>
-</template>
-            <!-- Video Conference Section -->
-            <div class="w-full">
-                {% include 'videoconferencing/create_meeting.html' %}
-            </div>
-
-            <!-- Charts Section (improved spacing) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition duration-300">
-                    <h3 class="text-lg font-semibold mb-3">Patients by Gender</h3>
-                    <canvas id="patientsChart" height="250"></canvas>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition duration-300">
-                    <h3 class="text-lg font-semibold mb-3">Age Distribution</h3>
-                    <canvas id="ageChart" height="250"></canvas>
-                </div>
-            </div>
-
-            <!-- Patient List (improved table styling) -->
-            <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                <div class="p-4 border-b">
-                    <h3 class="text-lg md:text-xl font-semibold">Your Patients</h3>
-                </div>
-                <div class="overflow-x-auto">
-                    <ul id="patients-list" class="divide-y divide-gray-200 min-w-full"></ul>
-                </div>
-                <div class="flex justify-between p-4 border-t">
-                    <button id="prev-page" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition duration-300 text-sm">
-                        Previous
-                    </button>
-                    <button id="next-page" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition duration-300 text-sm">
-                        Next
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Patient Modal (improved layout) -->
-    <div id="patient-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-start mb-4">
-                <h3 class="text-xl font-semibold">Patient Details</h3>
-                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Patient Profile -->
-                <div class="flex flex-col items-center">
-                    <img id="patient-profile-pic" class="rounded-full w-32 h-32 object-cover border-4 border-blue-100" alt="Profile Picture">
-                    <h4 class="text-lg font-semibold mt-3" id="patient-name"></h4>
-                    <p class="text-gray-600" id="patient-age-gender"></p>
-                    <p class="text-gray-600" id="patient-blood-type"></p>
-                </div>
-                
-                <!-- Medical Info -->
-                <div class="md:col-span-2 space-y-4">
-                    <div>
-                        <h4 class="font-semibold text-gray-700">Medical History:</h4>
-                        <p id="patient-medical-history" class="text-gray-600 mt-1"></p>
-                    </div>
-                    
-                    <div>
-                        <h4 class="font-semibold text-gray-700">Current Medications:</h4>
-                        <ul id="patient-medications" class="list-disc list-inside text-gray-600 mt-1"></ul>
-                    </div>
-                    
-                    <div>
-                        <h4 class="font-semibold text-gray-700">Assigned Doctors:</h4>
-                        <ul id="patient-doctors" class="list-disc list-inside text-gray-600 mt-1"></ul>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Action Buttons (improved responsive layout) -->
-            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button id="write-prescription" class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition duration-300 text-sm md:text-base">
-                    Prescription
-                </button>
-                <button id="write-report" class="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 transition duration-300 text-sm md:text-base">
-                    Medical Report
-                </button>
-                <button id="view-appointments" class="bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 transition duration-300 text-sm md:text-base">
-                    Appointments
-                </button>
-                <button id="start-messaging" class="bg-yellow-600 text-white px-3 py-2 rounded hover:bg-yellow-700 transition duration-300 text-sm md:text-base">
-                    Message
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Prescription Form (improved styling) -->
-    <div id="prescription-form" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-start mb-4">
-                <h2 class="text-xl font-bold">Prescription Form</h2>
-                <button id="close-prescription-form" class="text-gray-500 hover:text-gray-700">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            
-            <form id="prescriptionForm" class="space-y-4">
-                <div>
-                    <label for="patient-name" class="block text-sm font-medium text-gray-700">Patient Name:</label>
-                    <input type="text" id="patient-name" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" readonly required>
-                </div>
-
-                <div>
-                    <label for="medicine" class="block text-sm font-medium text-gray-700">Medicine:</label>
-                    <input type="text" id="medicine" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
-                </div>
-
-                <div>
-                    <label for="dosage" class="block text-sm font-medium text-gray-700">Dosage:</label>
-                    <input type="text" id="dosage" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
-                </div>
-
-                <div>
-                    <label for="notes" class="block text-sm font-medium text-gray-700">Notes:</label>
-                    <textarea id="notes" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="4"></textarea>
-                </div>
-
-                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-300">
-                    Submit Prescription
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Medical Report Modal (improved layout) -->
-    <div id="report-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div class="bg-white rounded-lg shadow-lg w-11/12 md:w-2/3 lg:w-1/2 p-6 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-start mb-4">
-                <h2 class="text-xl font-bold">Write Medical Report</h2>
-                <button id="close-report-modal" class="text-gray-500 hover:text-gray-700">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-
-            <form id="report-form" class="space-y-4">
-                <div>
-                    <label for="diagnosis" class="block text-sm font-medium text-gray-700">Diagnosis:</label>
-                    <textarea id="diagnosis" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="4" required></textarea>
-                </div>
-
-                <div>
-                    <label for="treatment" class="block text-sm font-medium text-gray-700">Treatment Plan:</label>
-                    <textarea id="treatment" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="4" required></textarea>
-                </div>
-
-                <div>
-                    <label for="notes" class="block text-sm font-medium text-gray-700">Additional Notes:</label>
-                    <textarea id="notes" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="4"></textarea>
-                </div>
-
-                <div>
-                    <label for="report-file" class="block text-sm font-medium text-gray-700">Upload File:</label>
-                    <input type="file" id="report-file" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" accept=".pdf,.png,.jpg,.jpeg,.docx">
-                </div>
-
-                <div>
-                    <label for="appointment-id" class="block text-sm font-medium text-gray-700">Appointment ID (optional):</label>
-                    <input type="text" id="appointment-id" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-300">
-                    Submit Report
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Appointments Container (improved styling) -->
-    <div id="appointments-container" class="hidden mt-6 bg-white shadow-md rounded-lg p-4">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold">Appointments</h2>
-            <button id="close-appointments" class="text-gray-500 hover:text-gray-700">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </div>
-        <div id="appointments-list" class="space-y-3">
-            <!-- Appointments will be dynamically inserted here -->
-        </div>
-    </div>
-
-    <!-- Script  -->
-    <script src="{% static 'js/doctor_dashboard.js' %}" defer></script>
-        <script>
-        lucide.createIcons();
-    </script>
+  <form id="notification-csrf" class="hidden">{% csrf_token %}</form>
+  <script>
+    const notificationCsrfToken = document.querySelector("#notification-csrf [name=csrfmiddlewaretoken]").value;
+    document.querySelectorAll("[data-mark-notification-read]").forEach(button => {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const response = await fetch(`/api/notifications/${button.dataset.markNotificationRead}/read/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": notificationCsrfToken },
+          });
+          if (!response.ok) throw new Error("Could not update notification.");
+          const row = button.closest("[data-notification-row]");
+          row.querySelector("p").classList.remove("font-bold", "text-slate-900");
+          row.querySelector("p").classList.add("text-slate-600");
+          button.remove();
+          const count = document.getElementById("unread-notifications-count");
+          const unread = Math.max(0, Number.parseInt(count.textContent, 10) - 1);
+          count.textContent = `${unread} unread`;
+          const navCount = document.getElementById("notification-nav-count");
+          if (navCount) {
+            if (unread) navCount.textContent = unread;
+            else navCount.remove();
+          }
+        } catch {
+          button.disabled = false;
+          const error = document.getElementById("notification-error");
+          error.textContent = "Could not mark this notification as read. Please retry.";
+          error.classList.remove("hidden");
+        }
+      });
+    });
+  </script>
 </body>
 </html>

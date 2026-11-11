@@ -1,0 +1,252 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% if request.user.is_superuser %}
+    <style>
+      .admin-dashboard-shell {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 1.25rem;
+        margin-top: 1rem;
+      }
+
+      .admin-dashboard-sidebar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 1rem;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      }
+
+      .admin-dashboard-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #edf2f7;
+      }
+
+      .admin-dashboard-logo {
+        display: grid;
+        place-items: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.9rem;
+        background: linear-gradient(135deg, #3b82f6, #4f46e5);
+        color: #fff;
+        font-weight: 800;
+      }
+
+      .admin-dashboard-brand-copy {
+        display: block;
+        font-weight: 800;
+        color: #0f172a;
+      }
+
+      .admin-dashboard-brand-tag {
+        display: block;
+        font-size: 0.7rem;
+        color: #64748b;
+        letter-spacing: 0.04em;
+      }
+
+      .admin-dashboard-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        margin-top: 1rem;
+      }
+
+      .admin-dashboard-nav button {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.7rem;
+        width: 100%;
+        border: 0;
+        border-radius: 0.9rem;
+        padding: 0.7rem 0.8rem;
+        background: transparent;
+        color: #334155;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .admin-dashboard-nav button:hover,
+      .admin-dashboard-nav button[aria-current="page"] {
+        background: #eef2ff;
+        color: #1d4ed8;
+      }
+
+      .admin-dashboard-content {
+        min-width: 0;
+      }
+
+      .admin-dashboard-panel {
+        display: none;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 1.2rem;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      }
+
+      .admin-dashboard-panel[data-admin-panel="overview"] {
+        display: block;
+      }
+
+      .admin-dashboard-hero {
+        background: linear-gradient(135deg, #1d4ed8, #0f172a);
+        color: #fff;
+        border-radius: 18px;
+        padding: 1.4rem 1.5rem;
+      }
+
+      .admin-dashboard-hero p {
+        margin: 0;
+        color: rgba(255,255,255,0.8);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .admin-dashboard-hero h2 {
+        margin: 0.55rem 0 0;
+        font-size: clamp(1.5rem, 2vw, 2.2rem);
+        color: #fff;
+      }
+
+      .admin-dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-top: 1.3rem;
+      }
+
+      .admin-dashboard-stat {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1rem;
+      }
+
+      .admin-dashboard-stat-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .admin-dashboard-stat-value {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: clamp(1.5rem, 2vw, 2.2rem);
+        font-weight: 800;
+        color: #0f172a;
+      }
+
+      .admin-dashboard-section {
+        margin-top: 1rem;
+      }
+
+      .admin-dashboard-section h3 {
+        margin: 0 0 0.75rem;
+        font-size: 1.15rem;
+        color: #111827;
+      }
+
+      .admin-dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+      }
+
+      .admin-dashboard-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1rem;
+        background: #f8fafc;
+      }
+
+      .admin-dashboard-card h4 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #475569;
+      }
+
+      .admin-dashboard-card strong {
+        display: block;
+        margin-top: 0.7rem;
+        font-size: 1.6rem;
+        color: #111827;
+      }
+
+      .admin-dashboard-card small {
+        display: block;
+        margin-top: 0.25rem;
+        color: #64748b;
+      }
+
+      @media (max-width: 980px) {
+        .admin-dashboard-shell {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  {% endif %}
+{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+
+{% block content %}
+  {% if request.user.is_superuser %}
+    {% include "admin/superadmin_base.html" %}
+  {% else %}
+    <div id="content-main">
+      {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block sidebar %}
+  {% if not request.user.is_superuser %}
+    <div id="content-related">
+      <div class="module" id="recent-actions-module">
+        <h2>{% translate 'Recent actions' %}</h2>
+        <h3>{% translate 'My actions' %}</h3>
+        {% load log %}
+        {% get_admin_log 10 as admin_log for_user user %}
+        {% if not admin_log %}
+          <p>{% translate 'None available' %}</p>
+        {% else %}
+          <ul class="actionlist">
+            {% for entry in admin_log %}
+              <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
+                <span class="visually-hidden">{% if entry.is_addition %}{% translate 'Added:' %}{% elif entry.is_change %}{% translate 'Changed:' %}{% elif entry.is_deletion %}{% translate 'Deleted:' %}{% endif %}</span>
+                {% if entry.is_deletion or not entry.get_admin_url %}
+                  {{ entry.object_repr }}
+                {% else %}
+                  <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+                {% endif %}
+                <br>
+                {% if entry.content_type %}
+                  <span class="mini quiet">{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</span>
+                {% else %}
+                  <span class="mini quiet">{% translate 'Unknown content' %}</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

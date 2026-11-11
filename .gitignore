@@ -1,6 +1,12 @@
 my_venv
 .env
+.env.*
+!.env.example
+.venv
+venv
 .idea
 .vscode
 __pycache__
 *.pyc
+db.sqlite3
+theme/static/css/dist/

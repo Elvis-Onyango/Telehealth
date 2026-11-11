@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 from .models import User, DoctorProfile, PatientProfile, Weekday, DoctorAvailability 
 from apps.appointments.serializers import HospitalSerializer
 from datetime import datetime, timedelta
@@ -132,15 +132,21 @@ class DoctorAvailabilityCreateSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+    role = serializers.ChoiceField(choices=("patient", "doctor"), default="patient")
+    phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'username', 'email', 'phone', 'address', 'gender', 'profile_picture', 'password', 'role']
 
     def create(self, validated_data):
-        validated_data["password"] = make_password(validated_data["password"])
-        return User.objects.create(**validated_data)
+        return User.objects.create_user(**validated_data)
+
+    def validate_phone(self, value):
+        if value is None:
+            return None
+        return value.strip() or None
 
 
 
@@ -190,8 +196,4 @@ class LoginSerializer(serializers.Serializer):
                 "profile_required": profile_required,  
             },
         }
-
-
-
-
 

@@ -3,159 +3,336 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Doctor/Patient Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Secure Messaging | MiDoctor</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 h-screen">
+<body class="min-h-screen bg-slate-100 text-slate-900">
+  <header class="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-5 py-4">
+    <a href="/" class="text-xl font-bold text-blue-700">MiDoctor · Secure Messaging</a>
+    <span class="text-sm text-slate-600">Signed in as {{ chat_context.username }} ({{ chat_context.role }})</span>
+  </header>
 
-  <!-- Navbar -->
-  <nav class="bg-white shadow p-4 flex justify-between">
-    <h1 class="text-xl font-bold text-gray-800">🩺 Secure Messaging</h1>
-    <p class="text-sm text-gray-600">Logged in as: <strong>{{ username }}</strong> ({{ role }})</p>
-  </nav>
+  <main class="mx-auto flex h-[calc(100vh-73px)] max-w-6xl overflow-hidden bg-white shadow-sm">
+    <aside class="w-72 shrink-0 border-r max-sm:w-32">
+      <h1 class="border-b px-4 py-4 text-lg font-semibold">Contacts</h1>
+      <p id="contacts-status" class="px-4 py-3 text-sm text-slate-500">Loading contacts…</p>
+      <ul id="contact-list" class="divide-y divide-slate-100"></ul>
+    </aside>
 
-  <!-- Main Layout -->
-  <div class="flex h-[90vh]">
-
-    <!-- Contacts Sidebar -->
-    <div class="w-1/4 bg-white border-r overflow-y-auto">
-      <h2 class="text-lg font-semibold px-4 py-3 border-b">Contacts</h2>
-      <ul id="contact-list" class="divide-y divide-gray-200"></ul>
-    </div>
-
-    <!-- Chat Area -->
-    <div class="w-3/4 flex flex-col">
-      
-      <!-- Chat Header -->
-      <div class="bg-white border-b px-4 py-3">
-        <h2 id="chat-header" class="text-lg font-semibold text-gray-700">Select a contact</h2>
+    <section class="flex min-w-0 flex-1 flex-col">
+      <div class="flex items-center justify-between border-b px-5 py-4">
+        <h2 id="chat-header" class="truncate font-semibold text-slate-700">Choose a contact to start chatting</h2>
+        <span id="connection-status" class="ml-3 shrink-0 text-xs text-slate-500">Offline</span>
       </div>
 
-      <!-- Chat Messages -->
-      <div id="chat-box" class="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-2">
-        <!-- Messages will go here -->
-      </div>
+      <div id="chat-box" aria-live="polite" class="flex flex-1 flex-col gap-3 overflow-y-auto bg-slate-50 p-5"></div>
+      <p id="chat-error" role="alert" class="hidden border-t bg-red-50 px-5 py-2 text-sm text-red-700"></p>
 
-      <!-- Send Message Form -->
-      <form id="chat-form" class="flex items-center border-t p-4 bg-white">
-        <input type="text" id="chat-input" class="flex-1 border rounded px-4 py-2 mr-2" placeholder="Type your message..." required>
-        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Send</button>
+      <form id="chat-form" class="flex flex-wrap gap-3 border-t bg-white p-4">
+        {% csrf_token %}
+        <input id="attachment-input" type="file" class="sr-only" disabled
+               aria-label="Choose a file or prescription attachment">
+        <button id="attachment-button" type="button" disabled
+                class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+          Attach file
+        </button>
+        <span id="attachment-name" class="hidden max-w-48 self-center truncate text-xs text-slate-500"></span>
+        <label for="chat-input" class="sr-only">Message</label>
+        <input id="chat-input" maxlength="5000" autocomplete="off" disabled
+               class="min-w-0 flex-1 rounded-lg border px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+               placeholder="Select a contact first">
+        <span id="upload-status" role="status" aria-live="polite" class="hidden w-full text-sm text-slate-500"></span>
+        <button id="send-button" type="submit" disabled
+                class="rounded-lg bg-blue-600 px-5 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+          Send
+        </button>
       </form>
+    </section>
+  </main>
 
-    </div>
-  </div>
-
-  <!-- Inject context from Django -->
+  {{ chat_context|json_script:"chat-context" }}
   <script>
-    const userId = "{{ user_id }}";
-    const username = "{{ username }}";
-    const role = "{{ role }}";
+    const chatContext = JSON.parse(document.getElementById("chat-context").textContent);
     const token = localStorage.getItem("access_token");
+    const contactList = document.getElementById("contact-list");
+    const contactsStatus = document.getElementById("contacts-status");
+    const connectionStatus = document.getElementById("connection-status");
+    const chatBox = document.getElementById("chat-box");
+    const chatInput = document.getElementById("chat-input");
+    const sendButton = document.getElementById("send-button");
+    const attachmentInput = document.getElementById("attachment-input");
+    const attachmentButton = document.getElementById("attachment-button");
+    const attachmentName = document.getElementById("attachment-name");
+    const uploadStatus = document.getElementById("upload-status");
+    const csrfToken = document.querySelector("#chat-form [name=csrfmiddlewaretoken]").value;
+    const chatError = document.getElementById("chat-error");
     let selectedContact = null;
-  </script>
+    let activeSocket = null;
+    let renderedMessageIds = new Set();
+    let selectedContactButton = null;
 
-  <!-- Chat Logic -->
-  <script>
     document.addEventListener("DOMContentLoaded", () => {
-      loadContacts();
+      if (!token) {
+        window.location.href = "/api/users/login-page/?next=/api/messaging/room/";
+        return;
+      }
 
-      document.getElementById("chat-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const content = document.getElementById("chat-input").value.trim();
-        if (!content || !selectedContact) return;
-
-        await fetch("/api/messaging/messages/send/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify({
-            recipient: selectedContact,
-            content: content,
-            message_type: "text"
-          })
-        });
-
-        document.getElementById("chat-input").value = "";
-        loadMessages(selectedContact);
+      document.getElementById("chat-form").addEventListener("submit", sendMessage);
+      attachmentButton.addEventListener("click", () => attachmentInput.click());
+      attachmentInput.addEventListener("change", () => {
+        const file = attachmentInput.files[0];
+        attachmentName.textContent = file ? file.name : "";
+        attachmentName.classList.toggle("hidden", !file);
+        uploadStatus.textContent = "";
+        uploadStatus.classList.add("hidden");
       });
+      loadContacts();
     });
 
     async function loadContacts() {
-      let contacts = [];
-
       try {
-        if (role === "doctor") {
-          const res = await fetch("/api/users/doctor/patients/", {
-            headers: { "Authorization": "Bearer " + token }
-          });
-          const data = await res.json();
-          contacts = data.results;
-        } else if (role === "patient") {
-          const res = await fetch("/api/users/patient/profile/", {
-            headers: { "Authorization": "Bearer " + token }
-          });
-          const data = await res.json();
-          contacts = data.doctors;
-        } else {
-          alert("Unknown role");
-          return;
-        }
-
-        const contactList = document.getElementById("contact-list");
-        contactList.innerHTML = "";
-
-        contacts.forEach(contact => {
-          const user = contact.user || {}; // fallback
-          const name = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim() || "Unknown";
-          const contactId = user.id;
-
-          if (!contactId) return; // skip invalid contact
-
-          const li = document.createElement("li");
-          li.className = "p-4 hover:bg-gray-100 cursor-pointer";
-          li.innerText = name;
-          li.onclick = () => {
-            selectedContact = contactId;
-            document.getElementById("chat-header").innerText = name;
-            loadMessages(contactId);
-          };
-          contactList.appendChild(li);
+        const response = await fetch("/api/messaging/contacts/", {
+          headers: { "Authorization": `Bearer ${token}` }
         });
+        if (!response.ok) throw new Error("Unable to load your messaging contacts.");
 
-      } catch (err) {
-        console.error("Failed to load contacts:", err);
+        const contacts = await response.json();
+        contactsStatus.textContent = contacts.length ? "" : "No assigned contacts yet.";
+        const buttons = contacts.map(addContact);
+        const requestedContact = new URLSearchParams(window.location.search).get("contact");
+        const requestedIndex = contacts.findIndex(contact => String(contact.id) === requestedContact);
+        if (requestedIndex >= 0) {
+          buttons[requestedIndex].click();
+        }
+      } catch (error) {
+        contactsStatus.textContent = error.message;
       }
     }
 
+    function addContact(contact) {
+      const item = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "w-full px-4 py-4 text-left text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none";
+      button.textContent = contact.name;
+      button.addEventListener("click", () => selectContact(contact, button));
+      item.appendChild(button);
+      contactList.appendChild(item);
+      return button;
+    }
+
+    async function selectContact(contact, button) {
+      selectedContact = contact;
+      selectedContactButton?.classList.remove("bg-blue-50", "font-semibold", "text-blue-700");
+      selectedContactButton = button;
+      selectedContactButton.classList.add("bg-blue-50", "font-semibold", "text-blue-700");
+      document.getElementById("chat-header").textContent = contact.name;
+      chatInput.disabled = false;
+      attachmentInput.disabled = false;
+      attachmentButton.disabled = false;
+      chatInput.placeholder = "Write a message…";
+      sendButton.disabled = true;
+      chatError.classList.add("hidden");
+      chatBox.replaceChildren();
+      renderedMessageIds = new Set();
+      activeSocket?.close();
+      activeSocket = null;
+      connectionStatus.textContent = "Connecting…";
+
+      await loadMessages(contact.id);
+      if (selectedContact?.id === contact.id) connectSocket(contact.id);
+    }
+
     async function loadMessages(contactId) {
-  const res = await fetch(`/api/messaging/messages/${contactId}/`, {
-    headers: { "Authorization": "Bearer " + token }
-  });
+      try {
+        const response = await fetch(`/api/messaging/messages/${contactId}/`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error("Unable to load this conversation.");
 
-  if (!res.ok) {
-    alert("Failed to load messages");
-    return;
-  }
+        const messages = await response.json();
+        messages.forEach(renderMessage);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (error) {
+        showError(error.message);
+      }
+    }
 
-  const messages = await res.json();
-  const chatBox = document.getElementById("chat-box");
-  chatBox.innerHTML = "";
+    function connectSocket(contactId) {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const socket = new WebSocket(
+        `${protocol}//${window.location.host}/ws/chat/${contactId}/`,
+        ["jwt", token]
+      );
+      activeSocket = socket;
 
-  messages.forEach(msg => {
-    const isMe = msg.sender && msg.sender.id === parseInt(userId);
-    const div = document.createElement("div");
-    div.className = `max-w-[75%] p-2 px-4 rounded shadow text-sm ${
-      isMe ? 'bg-blue-500 text-white self-end ml-auto' : 'bg-gray-200 text-gray-800'
-    }`;
-    div.innerText = msg.content;
-    chatBox.appendChild(div);
-  });
+      socket.addEventListener("open", () => {
+        if (activeSocket !== socket) return;
+        connectionStatus.textContent = "Connected";
+        sendButton.disabled = false;
+        socket.send(JSON.stringify({ type: "read_messages" }));
+      });
 
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+      socket.addEventListener("message", event => {
+        if (activeSocket !== socket) return;
+        let payload;
+        try {
+          payload = JSON.parse(event.data);
+        } catch {
+          showError("Received an invalid chat response.");
+          return;
+        }
 
+        if (payload.type === "chat_message") {
+          renderMessage(payload.message);
+          chatBox.scrollTop = chatBox.scrollHeight;
+        } else if (payload.type === "read_receipt") {
+          if (Number(payload.reader_id) !== Number(chatContext.user_id)) {
+            markMessagesRead(payload.message_ids);
+          }
+        } else if (payload.type === "error") {
+          showError(payload.detail || "The message could not be sent.");
+        }
+      });
+
+      socket.addEventListener("close", event => {
+        if (activeSocket !== socket) return;
+        activeSocket = null;
+        connectionStatus.textContent = event.code === 4401 || event.code === 4403
+          ? "Access denied"
+          : "Disconnected";
+        sendButton.disabled = true;
+        attachmentButton.disabled = true;
+        if (event.code === 4401) {
+          window.location.href = "/api/users/login-page/?next=/api/messaging/room/";
+        }
+      });
+
+      socket.addEventListener("error", () => {
+        if (activeSocket === socket) showError("Chat connection failed. Please try again.");
+      });
+    }
+
+    function renderMessage(message) {
+      if (!message || renderedMessageIds.has(message.id)) return;
+      renderedMessageIds.add(message.id);
+
+      const isMine = Number(message.sender?.id ?? message.sender) === Number(chatContext.user_id);
+      const bubble = document.createElement("div");
+      bubble.dataset.messageId = message.id;
+      bubble.className = isMine
+        ? "max-w-[80%] self-end rounded-2xl rounded-br-sm bg-blue-600 px-4 py-3 text-sm text-white"
+        : "max-w-[80%] self-start rounded-2xl rounded-bl-sm bg-white px-4 py-3 text-sm text-slate-800 shadow-sm";
+
+      const content = document.createElement("p");
+      content.className = "whitespace-pre-wrap break-words";
+      content.textContent = message.content || "";
+      bubble.appendChild(content);
+
+      if (message.file) {
+        const attachment = document.createElement("a");
+        attachment.href = message.file;
+        attachment.target = "_blank";
+        attachment.rel = "noopener noreferrer";
+        attachment.className = "mt-2 block break-all font-medium underline";
+        attachment.textContent = message.file.split("/").pop() || "Open attachment";
+        bubble.appendChild(attachment);
+      }
+
+      const timestamp = document.createElement("time");
+      timestamp.className = isMine ? "mt-1 block text-right text-xs text-blue-100" : "mt-1 block text-xs text-slate-400";
+      timestamp.textContent = new Date(message.timestamp).toLocaleString();
+      bubble.appendChild(timestamp);
+      if (isMine) {
+        const readStatus = document.createElement("span");
+        readStatus.className = "read-status mt-1 block text-right text-xs text-blue-100";
+        readStatus.textContent = message.is_read ? "Read" : "";
+        bubble.appendChild(readStatus);
+      }
+      chatBox.appendChild(bubble);
+    }
+
+    function markMessagesRead(messageIds) {
+      const readIds = new Set(messageIds.map(String));
+      chatBox.querySelectorAll("[data-message-id]").forEach(message => {
+        if (readIds.has(message.dataset.messageId)) {
+          const status = message.querySelector(".read-status");
+          if (status) status.textContent = "Read";
+        }
+      });
+    }
+
+    async function sendMessage(event) {
+      event.preventDefault();
+      const content = chatInput.value.trim();
+      if (!selectedContact) return;
+
+      const attachment = attachmentInput.files[0];
+      if (attachment) {
+        const recipientId = selectedContact.id;
+        const formData = new FormData();
+        formData.append("recipient", recipientId);
+        formData.append("message_type", "file");
+        formData.append("file", attachment);
+        if (content) formData.append("content", content);
+        sendButton.disabled = true;
+        attachmentButton.disabled = true;
+        chatInput.disabled = true;
+        uploadStatus.textContent = `Uploading ${attachment.name}…`;
+        uploadStatus.classList.remove("hidden");
+        try {
+          const response = await fetch("/api/messaging/messages/send/", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "X-CSRFToken": csrfToken,
+            },
+            body: formData,
+          });
+          if (!response.ok) {
+            const responseText = await response.text();
+            let data;
+            try {
+              data = JSON.parse(responseText);
+            } catch {
+              data = null;
+            }
+            const errors = data && typeof data === "object"
+              ? Object.values(data).flat().filter(value => typeof value === "string")
+              : [];
+            throw new Error(errors.join(" ") || `File upload failed (HTTP ${response.status}).`);
+          }
+          chatInput.value = "";
+          attachmentInput.value = "";
+          attachmentName.textContent = "";
+          attachmentName.classList.add("hidden");
+          chatError.classList.add("hidden");
+          uploadStatus.textContent = "File sent.";
+          if (selectedContact?.id === recipientId) await loadMessages(recipientId);
+        } catch (error) {
+          showError(error.message || "File could not be uploaded.");
+          uploadStatus.textContent = "Upload failed. Your file is still selected; you can retry.";
+        } finally {
+          const connected = activeSocket?.readyState === WebSocket.OPEN;
+          sendButton.disabled = !connected;
+          attachmentButton.disabled = !connected;
+          chatInput.disabled = !selectedContact;
+        }
+        return;
+      }
+
+      if (!content || activeSocket?.readyState !== WebSocket.OPEN) return;
+
+      activeSocket.send(JSON.stringify({ type: "chat_message", content }));
+      chatInput.value = "";
+      chatError.classList.add("hidden");
+    }
+
+    function showError(message) {
+      chatError.textContent = message;
+      chatError.classList.remove("hidden");
+    }
   </script>
 </body>
 </html>

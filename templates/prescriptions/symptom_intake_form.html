@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Symptom Intake</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 40px; background: #f8fafc; color: #1f2937; }
+      .card { max-width: 720px; margin: 0 auto; background: white; padding: 32px; border-radius: 16px; box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08); }
+      .field { margin-bottom: 18px; }
+      label { display: block; font-weight: 600; margin-bottom: 8px; }
+      textarea, input, select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+      button { background: #2563eb; color: white; border: 0; border-radius: 8px; padding: 12px 18px; cursor: pointer; font-size: 15px; }
+      .muted { color: #64748b; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Before your visit</h1>
+      <p class="muted">Tell us about the symptoms you are experiencing so the clinician can prepare.</p>
+
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div class="muted">{{ field.errors }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        <button type="submit">Save symptom intake</button>
+      </form>
+    </div>
+  </body>
+</html>

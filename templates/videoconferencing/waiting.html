@@ -126,7 +126,7 @@
 
         // Copy meeting link to clipboard
         function copyMeetingLink() {
-            const meetingLink = `${window.location.origin}{% url 'videoconferencing:meeting' meeting.meeting_id %}`;
+            const meetingLink = `${window.location.origin}{% url 'videoconferencing:video_meeting' meeting.meeting_id %}`;
             navigator.clipboard.writeText(meetingLink)
                 .then(() => {
                     // Show temporary feedback

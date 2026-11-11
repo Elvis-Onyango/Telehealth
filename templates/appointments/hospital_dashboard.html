@@ -1,794 +1,880 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hospital Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/heroicons"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if is_superadmin %}Superadmin{% else %}Hospital{% endif %} dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    /* Hide sidebar on mobile and display hamburger */
-    @media (max-width: 768px) {
-      .sidebar {
-        display: none;
-      }
-
-      .sidebar.open {
-        display: block;
-      }
-
-      .hamburger {
-        display: block;
-      }
+    body { font-family: "DM Sans", sans-serif; }
+    h1, h2, h3 { font-family: "Manrope", sans-serif; }
+    .dashboard-shell { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 1.25rem; height: calc(100dvh - 7.5rem); min-height: 34rem; }
+    .dashboard-sidebar { position: sticky; top: 1rem; min-height: 0; overflow-y: auto; }
+    .dashboard-workspace { min-width: 0; min-height: 0; overflow-y: auto; padding: .25rem .4rem .5rem 0; scrollbar-gutter: stable; }
+    .dashboard-nav-item { display: flex; width: 100%; align-items: center; gap: .75rem; border-radius: .75rem; padding: .7rem .8rem; color: #475569; text-align: left; font-weight: 600; }
+    .dashboard-nav-item:hover { background: #f1f5f9; color: #0f172a; }
+    .dashboard-nav-item[aria-current="page"] { background: #eff6ff; color: #1d4ed8; }
+    .dashboard-nav-item[aria-current="page"] .dashboard-nav-icon { background: #dbeafe; color: #1d4ed8; }
+    .dashboard-nav-icon { display: grid; width: 1.8rem; height: 1.8rem; flex: none; place-items: center; border-radius: .55rem; background: #f1f5f9; color: #64748b; font-size: .75rem; }
+    body.dashboard-enhanced [data-dashboard-panel]:not([data-active-panel]) { display: none; }
+    .dashboard-workspace [data-dashboard-panel] { scroll-margin-top: .5rem; }
+    @media (max-width: 760px) {
+      .dashboard-shell { display: flex; height: auto; min-height: 0; flex-direction: column; overflow: visible; }
+      .dashboard-sidebar { position: static; overflow: visible; }
+      .dashboard-nav { display: flex; gap: .25rem; overflow-x: auto; padding-bottom: .35rem; }
+      .dashboard-nav-item { width: auto; flex: none; white-space: nowrap; }
+      .dashboard-workspace { max-height: none; overflow: visible; padding: 0; }
     }
-
-    .hamburger {
-      display: none;
-    }
+    input, select, textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: .65rem; padding: .65rem .75rem; background: #fff; max-width: 100%; }
+    input[type="checkbox"], input[type="radio"] { width: auto; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid #bfdbfe; border-color: #3b82f6; }
+    label { display: block; font-weight: 600; margin-top: .5rem; color: #334155; }
+    form p { margin-bottom: .75rem; }
+    table { border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #e2e8f0; padding: .8rem; text-align: left; vertical-align: top; }
+    th { color: #64748b; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; background: #f8fafc; }
+    tbody tr:hover { background: #f8fafc; }
+    summary { cursor: pointer; color: #1d4ed8; font-weight: 600; }
+    button { transition: filter .15s ease, transform .15s ease; }
+    button:hover { filter: brightness(.96); }
   </style>
 </head>
-
-<body class="bg-gray-100">
-
-  <!-- Dashboard Container -->
-  <div class="flex h-screen overflow-hidden">
-
-    <!-- Sidebar -->
-    <aside class="sidebar bg-blue-800 text-white w-64 p-4 flex-shrink-0">
-      <h1 class="text-2xl font-bold mb-6">Hospital</h1>
-      <nav>
-        <a href="#" class="flex items-center py-2 hover:bg-blue-700" onclick="loadContent('dashboard')">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-          </svg>
-          Dashboard
-        </a>
-        <a href="#" class="flex items-center py-2 hover:bg-blue-700" onclick="loadContent('patients')">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-          </svg>
-          Patients
-        </a>
-        <a href="#" class="flex items-center py-2 hover:bg-blue-700" onclick="loadContent('doctors')">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-          </svg>
-          Doctors
-        </a>
-        <a href="#" class="flex items-center py-2 hover:bg-blue-700" onclick="loadContent('medicines')">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-          </svg>
-          Medicines
-        </a>
-        <a href="#" class="flex items-center py-2 hover:bg-blue-700" onclick="loadContent('appointments')">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-          </svg>
-          Appointments
-        </a>
-      </nav>
-    </aside>
-
-    <!-- Main Content -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- Navbar -->
-      <header class="bg-white shadow p-4">
-        <div class="flex justify-between items-center">
-          <h2 class="text-2xl font-bold">Dashboard</h2>
-          <div class="flex items-center">
-            <button class="hamburger text-gray-700 p-4 md:hidden" onclick="toggleSidebar()">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-              </svg>
-            </button>
-            <input type="text" placeholder="Search..." class="px-4 py-2 border rounded-lg">
-            <div class="ml-4 relative">
-              <button class="flex items-center">
-                <img src="https://via.placeholder.com/40" alt="User" class="rounded-full">
-                <span class="ml-2">Admin</span>
-              </button>
-            </div>
-          </div>
+<body class="bg-slate-100 text-slate-900">
+  <header class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white shadow-lg">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+      <div class="flex items-center gap-3">
+        <span class="grid h-11 w-11 place-items-center rounded-xl bg-blue-500 text-lg font-extrabold">M</span>
+        <div>
+        <p class="text-sm text-slate-300">{% if is_superadmin %}System management{% else %}Hospital operations{% endif %}</p>
+        <h1 class="text-xl font-bold">{% if is_superadmin %}Superadmin dashboard{% else %}{{ selected_hospital.name }} dashboard{% endif %}</h1>
         </div>
-      </header>
-
-      <!-- Main Content Section -->
-      <main class="flex-1 overflow-y-auto p-6" id="content">
-
-        <!-- Default Content (Dashboard) -->
-        <div id="dashboard">
-          <h3 class="text-xl font-bold">Dashboard Overview</h3>
-          <p>This is the dashboard where you can view the overview of the hospital data.</p>
-
-          <!-- Chart.js Example -->
-          <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-white p-4 rounded-lg shadow">
-              <h4 class="font-bold mb-4">Patient Admissions</h4>
-              <canvas id="patientChart"></canvas>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-              <h4 class="font-bold mb-4">Doctor Appointments</h4>
-              <canvas id="appointmentChart"></canvas>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-              <h4 class="font-bold mb-4">Medicine Stock</h4>
-              <canvas id="medicineChart"></canvas>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-              <h4 class="font-bold mb-4">Patient Gender Distribution</h4>
-              <canvas id="genderChart"></canvas>
-            </div>
-          </div>
-        </div>
-
-      </main>
+      </div>
+      <div class="text-right text-sm">
+        <p class="font-semibold">{{ request.user.get_full_name|default:request.user.username }}</p>
+        <p class="text-xs text-slate-300">{% if is_superadmin %}System administrator{% else %}Hospital administrator{% endif %}</p>
+        <form method="post" action="/admin/logout/">
+          {% csrf_token %}
+          <button class="mt-1 text-sky-300 underline">Sign out</button>
+        </form>
+      </div>
     </div>
-  </div>
+  </header>
 
+  <main class="mx-auto max-w-[100rem] px-4 py-5 sm:px-6 lg:px-8">
+    {% if messages %}
+      <section class="mb-4" aria-live="polite">
+        {% for message in messages %}
+          <div class="mb-2 rounded border p-3 {% if message.tags == 'error' %}border-red-300 bg-red-50 text-red-800{% else %}border-green-300 bg-green-50 text-green-800{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    <div class="dashboard-shell">
+      <aside class="dashboard-sidebar rounded-2xl border border-slate-200 bg-white p-3 shadow-sm" aria-label="Dashboard navigation">
+        <div class="mb-4 border-b border-slate-100 px-2 pb-4">
+          <p class="text-xs font-bold uppercase tracking-[.14em] text-slate-400">{% if is_superadmin %}Platform{% else %}Hospital{% endif %}</p>
+          <p class="mt-1 truncate font-bold text-slate-900">{% if is_superadmin %}Care network{% else %}{{ selected_hospital.name|default:"Operations" }}{% endif %}</p>
+        </div>
+        <nav class="dashboard-nav space-y-1" aria-label="Dashboard sections">
+          <button type="button" class="dashboard-nav-item" data-dashboard-target="overview" data-dashboard-label="Overview" aria-controls="dashboard-workspace">
+            <span class="dashboard-nav-icon" aria-hidden="true">OV</span>Overview
+          </button>
+          <button type="button" class="dashboard-nav-item" data-dashboard-target="notifications" data-dashboard-label="Notifications" aria-controls="dashboard-workspace">
+            <span class="dashboard-nav-icon" aria-hidden="true">NT</span>Notifications
+            {% if unread_notifications_count %}<span class="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">{{ unread_notifications_count }}</span>{% endif %}
+          </button>
+          {% if is_superadmin %}
+            <p class="px-3 pb-1 pt-4 text-xs font-bold uppercase tracking-[.12em] text-slate-400">Network</p>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="accounts" data-dashboard-label="User accounts" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">US</span>Users</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="directories" data-dashboard-label="Patients and staff" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">PT</span>Patients &amp; staff</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="records" data-dashboard-label="Clinical records" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">CR</span>Clinical records</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="messages" data-dashboard-label="Private messages" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">MS</span>Messages</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="appointments" data-dashboard-label="Appointments" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">AP</span>Appointments</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="orders" data-dashboard-label="Pharmacy orders" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">OR</span>Pharmacy orders</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="billing" data-dashboard-label="Billing" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">BL</span>Billing</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="video-calls" data-dashboard-label="Video calls" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">VC</span>Video calls</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="audit-log" data-dashboard-label="Audit log" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">AU</span>Audit log</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="pharmacy" data-dashboard-label="Pharmacy operations" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">PH</span>Pharmacy</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="hospitals" data-dashboard-label="Hospital management" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">HO</span>Hospitals</button>
+          {% endif %}
+          {% if selected_hospital %}
+            <p class="px-3 pb-1 pt-4 text-xs font-bold uppercase tracking-[.12em] text-slate-400">Selected hospital</p>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="hospital-directory" data-dashboard-label="Hospital patients and staff" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">DR</span>Patients &amp; staff</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="hospital-records" data-dashboard-label="Lab results and reports" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">MR</span>Medical reports</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="hospital-profile" data-dashboard-label="Hospital profile" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">PF</span>Profile</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="doctors" data-dashboard-label="Doctors" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">DC</span>Doctors</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="hospital-appointments-panel" data-dashboard-label="Hospital appointments" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">AP</span>Appointments</button>
+            <button type="button" class="dashboard-nav-item" data-dashboard-target="hospital-billing-panel" data-dashboard-label="Hospital billing" aria-controls="dashboard-workspace"><span class="dashboard-nav-icon" aria-hidden="true">$$</span>Billing</button>
+          {% endif %}
+        </nav>
+      </aside>
+      <div id="dashboard-workspace" class="dashboard-workspace space-y-5" aria-live="polite">
+        <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[.12em] text-slate-400">{% if is_superadmin %}System management{% else %}Hospital operations{% endif %}</p>
+            <h2 id="dashboard-panel-title" class="text-lg font-extrabold text-slate-900">Overview</h2>
+          </div>
+          <span class="hidden rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 sm:inline-flex">Live data</span>
+        </div>
+
+    <section data-dashboard-panel="overview" class="rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-600 p-6 text-white shadow-lg shadow-blue-900/10 sm:p-8">
+      <p class="text-sm font-semibold text-blue-100">{% if is_superadmin %}Multi-hospital operations{% else %}Hospital operations{% endif %}</p>
+      <div class="mt-2 flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <h2 class="text-3xl font-extrabold tracking-tight">{% if is_superadmin %}Manage your care network{% elif selected_hospital %}{{ selected_hospital.name }}{% else %}Hospital dashboard{% endif %}</h2>
+          <p class="mt-2 max-w-2xl text-blue-100">{% if is_superadmin %}Manage hospital profiles, administrators, staffing, appointments, and billing from one place.{% else %}A live overview of your hospital’s staffing, scheduled appointments, and operational billing.{% endif %}</p>
+        </div>
+        {% if selected_hospital %}<span class="rounded-full bg-white/15 px-4 py-2 text-sm font-bold ring-1 ring-white/20">Assigned hospital · {{ selected_hospital.name }}</span>{% endif %}
+      </div>
+    </section>
+
+    {% if selected_hospital %}
+      <section data-dashboard-panel="overview" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Hospital activity summary">
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Active appointments</p><p class="mt-2 text-3xl font-extrabold text-slate-900">{{ appointments_count }}</p></article>
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Doctors</p><p class="mt-2 text-3xl font-extrabold text-slate-900">{{ doctors_count }}</p></article>
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Pending payments</p><p class="mt-2 text-3xl font-extrabold text-amber-600">{{ pending_payments_count }}</p></article>
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Paid total</p><p class="mt-2 text-3xl font-extrabold text-emerald-700">KSh {{ paid_total|floatformat:2 }}</p></article>
+      </section>
+    {% endif %}
+
+    <section id="notifications" data-dashboard-panel="notifications" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between"><div><h2 class="text-lg font-bold">Notifications</h2><p class="mt-1 text-sm text-slate-500">Updates for your administrator account</p></div><span id="unread-notifications-count" class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{{ unread_notifications_count }} unread</span></div>
+      <p id="notification-error" class="hidden mt-3 text-sm text-red-700" role="alert"></p>
+      <ul class="mt-3 divide-y divide-slate-100">
+        {% for notification in notifications %}
+          <li class="flex items-start justify-between gap-3 py-3" data-notification-row="{{ notification.pk }}"><div><p class="text-sm {% if not notification.is_read %}font-bold text-slate-900{% else %}text-slate-600{% endif %}">{{ notification.message }}</p><time class="mt-1 block text-xs text-slate-400">{{ notification.created_at|date:"M j, Y · g:i A" }}</time></div>{% if not notification.is_read %}<button type="button" data-mark-notification-read="{{ notification.pk }}" class="shrink-0 text-xs font-bold text-blue-700 hover:underline">Mark read</button>{% endif %}</li>
+        {% empty %}<li class="py-4 text-sm text-slate-500">No new updates.</li>{% endfor %}
+      </ul>
+    </section>
+
+    {% if is_superadmin %}
+      <section id="system-overview" data-dashboard-panel="overview" class="space-y-4">
+        <div>
+          <h2 class="text-2xl font-extrabold">System-wide overview</h2>
+          <p class="mt-1 text-sm text-slate-600">A live view of care network activity across every hospital.</p>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Registered accounts</p><p class="mt-2 text-3xl font-extrabold text-slate-950">{{ global_total_users }}</p><p class="mt-1 text-xs text-slate-500">Across all roles</p></article>
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Hospitals</p><p class="mt-2 text-3xl font-extrabold text-slate-950">{{ hospital_count }}</p><p class="mt-1 text-xs text-slate-500">Care locations on the platform</p></article>
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Active appointments</p><p class="mt-2 text-3xl font-extrabold text-slate-950">{{ global_active_appointments }}</p><p class="mt-1 text-xs text-slate-500">Currently in the care network</p></article>
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-semibold text-slate-500">Collected billing</p><p class="mt-2 text-3xl font-extrabold text-emerald-700">KSh {{ global_paid_total|floatformat:2 }}</p><p class="mt-1 text-xs text-slate-500">Payments marked paid</p></article>
+        </div>
+        <div class="grid gap-4 xl:grid-cols-5">
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div><h3 class="text-base font-bold">Appointment activity</h3><p class="mt-1 text-sm text-slate-500">Appointments created in the last six months</p></div>
+              <span class="rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-bold text-blue-800">{{ global_total_appointments }} total</span>
+            </div>
+            <div class="mt-5 grid h-48 grid-cols-6 items-end gap-3 border-b border-slate-200 bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_47px,#e2e8f0_48px)] px-1">
+              {% for month in global_appointment_months %}
+                <div class="flex h-full min-w-0 flex-col items-center justify-end gap-2" aria-label="{{ month.label }}: {{ month.count }} appointments">
+                  <span class="text-xs font-semibold text-slate-600">{{ month.count }}</span>
+                  <div class="flex h-32 w-full items-end justify-center"><span class="w-full max-w-10 rounded-t-md bg-gradient-to-t from-blue-700 to-cyan-400" style="height: {{ month.bar_height }}%"></span></div>
+                  <span class="pb-2 text-xs font-medium text-slate-500">{{ month.label }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          </article>
+          <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+            <div><h3 class="text-base font-bold">Appointment status</h3><p class="mt-1 text-sm text-slate-500">Distribution across all appointments</p></div>
+            <div class="mt-5 space-y-4">
+              {% for row in global_appointment_status_rows %}
+                <div>
+                  <div class="mb-1.5 flex items-center justify-between gap-3 text-sm"><span class="font-semibold text-slate-700">{{ row.label }}</span><span class="tabular-nums text-slate-500">{{ row.count }} <span class="text-xs">· {{ row.percentage }}%</span></span></div>
+                  <div class="h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-400" style="width: {{ row.percentage }}%"></div></div>
+                </div>
+              {% endfor %}
+            </div>
+          </article>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {% for row in global_model_rows %}
+            <a href="#{{ row.anchor }}" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-blue-300 hover:shadow">
+              <span class="text-sm font-semibold text-slate-500">{{ row.label }}</span>
+              <span class="mt-1 flex items-end justify-between gap-3">
+                <strong class="text-2xl font-extrabold text-slate-900">{{ row.count }}</strong>
+                <span class="text-sm font-bold text-blue-700">Open dashboard section →</span>
+              </span>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section data-dashboard-panel="accounts" class="grid gap-6 xl:grid-cols-2">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="text-lg font-bold">Send a notification</h2>
+          <p class="mt-1 text-sm text-slate-500">Send to one account or broadcast to every user. Each send is recorded in the audit trail.</p>
+          <form method="post" action="{% url 'hospital-dashboard-action' 'send_notification' %}" class="mt-4 space-y-3">
+            {% csrf_token %}
+            {{ notification_broadcast_form.non_field_errors }}
+            <div>
+              {{ notification_broadcast_form.recipient.label_tag }}
+              {{ notification_broadcast_form.recipient }}
+              {{ notification_broadcast_form.recipient.errors }}
+            </div>
+            <label class="flex items-center gap-2 !font-medium">
+              {{ notification_broadcast_form.broadcast }}
+              {{ notification_broadcast_form.broadcast.label }}
+            </label>
+            <div>
+              {{ notification_broadcast_form.message.label_tag }}
+              {{ notification_broadcast_form.message }}
+              {{ notification_broadcast_form.message.errors }}
+            </div>
+            <button class="rounded-lg bg-blue-700 px-4 py-2 font-bold text-white">Send notification</button>
+          </form>
+        </div>
+
+        <div id="user-directory" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="text-lg font-bold">User accounts</h2>
+          <p class="mt-1 text-sm text-slate-500">Create patient/doctor accounts, edit basic contact details, and deactivate accounts without deleting their history.</p>
+          <details class="mt-3 rounded-lg border p-3">
+            <summary>Create patient or doctor account</summary>
+            <form method="post" action="{% url 'hospital-dashboard-action' 'create_user' %}" class="mt-3 grid gap-2 sm:grid-cols-2">
+              {% csrf_token %}
+              {{ superadmin_user_form.as_p }}
+              <button class="rounded-lg bg-blue-700 px-4 py-2 font-bold text-white sm:col-span-2">Create account</button>
+            </form>
+          </details>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr><th>Account</th><th>Role</th><th>Status</th><th>Manage</th></tr></thead>
+              <tbody>
+                {% for row in global_user_rows %}
+                  <tr>
+                    <td>{{ row.user.get_full_name|default:row.user.username }}<br><span class="text-xs text-slate-500">{{ row.user.username }}{% if row.user.email %} · {{ row.user.email }}{% endif %}</span></td>
+                    <td>{{ row.user.get_role_display|default:row.user.role|default:"—" }}</td>
+                    <td>{{ row.user.is_active|yesno:"Active,Inactive" }}</td>
+                    <td>
+                      <details>
+                        <summary>Edit</summary>
+                        <form method="post" action="{% url 'hospital-dashboard-action' 'update_user' %}" class="mt-2 min-w-64">
+                          {% csrf_token %}<input type="hidden" name="object_id" value="{{ row.user.pk }}">
+                          {{ row.form.as_p }}
+                          <button class="rounded bg-blue-700 px-3 py-2 font-bold text-white">Save account</button>
+                        </form>
+                      </details>
+                    </td>
+                  </tr>
+                {% empty %}<tr><td colspan="4">No accounts found.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="mt-2 text-xs text-slate-500">Showing up to 50 non-superadmin accounts.</p>
+        </div>
+      </section>
+
+      <section class="grid gap-6 xl:grid-cols-2">
+        <details id="global-clinical-records" data-dashboard-panel="records" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <summary class="text-lg">Recent clinical records (superadmin-only)</summary>
+          <div class="mt-4 space-y-5">
+            <div>
+              <h3 class="font-bold">Medical histories</h3>
+              {% for history in global_histories %}
+                <article class="mt-2 rounded-lg bg-slate-50 p-3 text-sm">
+                  <strong>{{ history.patient.user.get_full_name|default:history.patient.user.username }}</strong>
+                  <p>Allergies: {{ history.allergies|default:"—" }}</p>
+                  <p>Chronic diseases: {{ history.chronic_diseases|default:"—" }}</p>
+                  <p>Past surgeries: {{ history.past_surgeries|default:"—" }}</p>
+                  <p>Family history: {{ history.family_medical_history|default:"—" }}</p>
+                </article>
+              {% empty %}<p class="mt-2 text-sm text-slate-500">No medical histories.</p>{% endfor %}
+            </div>
+            <div>
+              <h3 class="font-bold">Prescriptions</h3>
+              {% for prescription in global_prescriptions %}
+                <article class="mt-2 rounded-lg bg-slate-50 p-3 text-sm">
+                  <strong>{{ prescription.patient.user.get_full_name|default:prescription.patient.user.username }}</strong>
+                  <span class="text-slate-500"> · Dr. {{ prescription.doctor.user.get_full_name }} · {{ prescription.date_issued|date:"M j, Y" }}</span>
+                  <pre class="mt-2 whitespace-pre-wrap font-sans">{{ prescription.get_decrypted_prescription }}</pre>
+                </article>
+              {% empty %}<p class="mt-2 text-sm text-slate-500">No prescriptions.</p>{% endfor %}
+            </div>
+            <div>
+              <h3 class="font-bold">Medical reports</h3>
+              {% for report in global_reports %}
+                <article class="mt-2 rounded-lg bg-slate-50 p-3 text-sm">
+                  <strong>{{ report.patient.user.get_full_name|default:report.patient.user.username }}</strong>
+                  <span class="text-slate-500"> · {{ report.date_issued|date:"M j, Y" }}</span>
+                  <p>Diagnosis: {{ report.get_decrypted_diagnosis }}</p>
+                  <p>Treatment: {{ report.get_decrypted_treatment_plan }}</p>
+                  <p>Notes: {{ report.get_decrypted_notes }}</p>
+                  {% if report.report_file %}<a class="mt-1 inline-block font-bold text-blue-700 underline" href="{% url 'medical-report-download' report.pk %}">Download report file</a>{% endif %}
+                </article>
+              {% empty %}<p class="mt-2 text-sm text-slate-500">No medical reports.</p>{% endfor %}
+            </div>
+          </div>
+        </details>
+
+        <details id="global-private-messages" data-dashboard-panel="messages" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <summary class="text-lg">Recent private messages (superadmin-only)</summary>
+          <div class="mt-4 space-y-3">
+            {% for message in global_messages %}
+              <article class="rounded-lg bg-slate-50 p-3 text-sm">
+                <div class="flex flex-wrap justify-between gap-2">
+                  <strong>{{ message.sender.get_full_name|default:message.sender.username }} → {{ message.recipient.get_full_name|default:message.recipient.username }}</strong>
+                  <time class="text-slate-500">{{ message.timestamp|date:"M j, Y · g:i A" }}</time>
+                </div>
+                <p class="mt-2 whitespace-pre-wrap">{{ message.content|default:"[No text content]" }}</p>
+                {% if message.file %}<a class="mt-1 inline-block font-bold text-blue-700 underline" href="{% url 'message-attachment' message.pk %}">Download attachment</a>{% endif %}
+              </article>
+            {% empty %}<p class="mt-2 text-sm text-slate-500">No messages.</p>{% endfor %}
+          </div>
+        </details>
+      </section>
+
+      <section class="grid gap-6 xl:grid-cols-2">
+        <details id="all-appointments" data-dashboard-panel="appointments" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <summary class="text-lg">Recent appointments across all hospitals</summary>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr><th>Date</th><th>Patient</th><th>Doctor</th><th>Hospital</th><th>Status</th></tr></thead>
+              <tbody>
+                {% for appointment in global_appointments %}
+                  <tr>
+                    <td>{{ appointment.date }} {{ appointment.time }}</td>
+                    <td>{{ appointment.patient.user.get_full_name|default:appointment.patient.user.username }}</td>
+                    <td>{{ appointment.doctor.user.get_full_name }}</td>
+                    <td>{{ appointment.hospital.name|default:"—" }}</td>
+                    <td>{{ appointment.get_status_display }}</td>
+                  </tr>
+                {% empty %}<tr><td colspan="5">No appointments.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </details>
+
+        <details data-dashboard-panel="orders" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <summary class="text-lg">Recent pharmacy orders across all users</summary>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr><th>Order</th><th>User</th><th>Date</th><th>Total</th><th>Status</th></tr></thead>
+              <tbody>
+                {% for order in global_orders %}
+                  <tr>
+                    <td>#{{ order.pk }}</td>
+                    <td>{{ order.user.get_full_name|default:order.user.username }}</td>
+                    <td>{{ order.ordered_at|date:"M j, Y · g:i A" }}</td>
+                    <td>{{ order.total_price }}</td>
+                    <td>{{ order.get_status_display }}</td>
+                  </tr>
+                {% empty %}<tr><td colspan="5">No orders.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section class="grid gap-6 xl:grid-cols-2">
+        <details id="global-billing" data-dashboard-panel="billing" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <summary class="text-lg">Recent billing across all hospitals</summary>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-sm"><thead><tr><th>Patient</th><th>Doctor</th><th>Hospital</th><th>Amount</th><th>Payment</th></tr></thead><tbody>
+              {% for billing in global_billing %}
+                <tr>
+                  <td>{{ billing.appointment.patient.user.get_full_name|default:billing.appointment.patient.user.username }}</td>
+                  <td>{{ billing.appointment.doctor.user.get_full_name }}</td>
+                  <td>{{ billing.appointment.hospital.name|default:"—" }}</td>
+                  <td>KSh {{ billing.total_fee }}</td>
+                  <td>{{ billing.get_payment_status_display }} · {{ billing.get_payment_method_display }}</td>
+                </tr>
+              {% empty %}<tr><td colspan="5">No billing records.</td></tr>{% endfor %}
+            </tbody></table>
+          </div>
+        </details>
+        <details id="global-video-calls" data-dashboard-panel="video-calls" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <summary class="text-lg">Recent video calls</summary>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-sm"><thead><tr><th>Host</th><th>Schedule</th><th>Duration</th><th>Appointment</th><th>Participants</th></tr></thead><tbody>
+              {% for call in global_video_calls %}
+                <tr>
+                  <td>{{ call.host.get_full_name|default:call.host.username }}</td>
+                  <td>{{ call.scheduled_time|date:"M j, Y · g:i A" }}</td>
+                  <td>{{ call.duration }} min</td>
+                  <td>{{ call.appointment_id|default:"—" }}</td>
+                  <td>{% for participant in call.participants.all %}{{ participant.get_full_name|default:participant.username }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+                </tr>
+              {% empty %}<tr><td colspan="5">No video calls scheduled.</td></tr>{% endfor %}
+            </tbody></table>
+          </div>
+        </details>
+      </section>
+
+      <section class="grid gap-6 xl:grid-cols-2">
+        <details data-dashboard-panel="audit-log" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <summary class="text-lg">Sensitive access and notification audit</summary>
+          <div class="mt-3 space-y-2">
+            {% for event in global_audit_events %}
+              <article class="rounded bg-slate-50 p-3 text-sm">
+                <strong>{{ event.action }}</strong> · {{ event.object_type }}{% if event.object_id %} #{{ event.object_id }}{% endif %}
+                <span>by {{ event.actor.username|default:"deleted account" }} · {{ event.created_at|date:"M j, Y · g:i A" }}</span>
+                {% if event.details %}<pre class="mt-1 whitespace-pre-wrap text-xs">{{ event.details }}</pre>{% endif %}
+              </article>
+            {% empty %}<p class="mt-2 text-sm text-slate-500">No sensitive dashboard events recorded.</p>{% endfor %}
+          </div>
+        </details>
+      </section>
+
+      <section data-dashboard-panel="directories" class="grid gap-6 xl:grid-cols-2">
+        <div id="global-patient-directory" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="text-lg font-bold">All patients</h2>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-sm"><thead><tr><th>Patient</th><th>Username</th><th>Email</th></tr></thead><tbody>
+              {% for patient in global_patients %}
+                <tr><td>{{ patient.user.get_full_name|default:patient.user.username }}</td><td>{{ patient.user.username }}</td><td>{{ patient.user.email|default:"—" }}</td></tr>
+              {% empty %}<tr><td colspan="3">No patient profiles.</td></tr>{% endfor %}
+            </tbody></table>
+          </div>
+          <p class="mt-2 text-xs text-slate-500">Showing the latest 20 patient profiles.</p>
+        </div>
+        <div id="global-staff-directory" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="text-lg font-bold">All hospital staff</h2>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-sm"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th></tr></thead><tbody>
+              {% for member in global_staff %}
+                <tr><td>{{ member.get_full_name|default:member.username }}</td><td>{{ member.username }}</td><td>{{ member.get_role_display|default:member.role|default:"Staff" }}</td><td>{{ member.is_active|yesno:"Active,Inactive" }}</td></tr>
+              {% empty %}<tr><td colspan="4">No staff accounts.</td></tr>{% endfor %}
+            </tbody></table>
+          </div>
+        </div>
+      </section>
+
+      {% endif %}
+      {% if selected_hospital %}
+      <section data-dashboard-panel="hospital-directory" class="grid gap-6 xl:grid-cols-2">
+        <div id="hospital-patient-directory" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex items-start justify-between gap-3">
+            <div><h2 class="text-lg font-bold">Patients at {{ selected_hospital.name }}</h2><p class="mt-1 text-sm text-slate-500">Patients with an appointment or care-team link to this hospital · {{ patients_count_total }} total</p></div>
+          </div>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr><th>Patient</th><th>Email</th><th>Phone</th><th>Profile</th></tr></thead>
+              <tbody>
+                {% for patient in patients %}
+                  <tr>
+                    <td>{{ patient.user.get_full_name|default:patient.user.username }}</td>
+                    <td>{{ patient.user.email|default:"—" }}</td>
+                    <td>{{ patient.user.phone|default:"—" }}</td>
+                    <td>{{ patient.gender|default:"—" }}{% if patient.blood_type %} · {{ patient.blood_type }}{% endif %}</td>
+                  </tr>
+                {% empty %}<tr><td colspan="4">No patients are linked to this hospital yet.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if patients_count_total > 100 %}<p class="mt-3 text-xs text-slate-500">Showing the first 100 patients. Refine the hospital selection to narrow this list.</p>{% endif %}
+        </div>
+
+        <div id="hospital-staff-directory" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 class="text-lg font-bold">Hospital staff</h2>
+          <p class="mt-1 text-sm text-slate-500">Doctors and administrators assigned to {{ selected_hospital.name }}</p>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr><th>Name</th><th>Role</th><th>Contact</th><th>Status</th></tr></thead>
+              <tbody>
+                {% for member in hospital_staff %}
+                  <tr>
+                    <td>{{ member.user.get_full_name|default:member.user.username }}</td>
+                    <td>{{ member.kind }}{% if member.title and member.kind == "Doctor" %} · {{ member.title }}{% endif %}</td>
+                    <td>{{ member.user.email|default:member.user.phone|default:"—" }}</td>
+                    <td>{{ member.user.is_active|yesno:"Active,Inactive" }}</td>
+                  </tr>
+                {% empty %}<tr><td colspan="4">No staff are assigned to this hospital.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="hospital-clinical-records" data-dashboard-panel="hospital-records" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="text-lg font-bold">Lab results and medical reports</h2>
+        <p class="mt-1 text-sm text-slate-500">Read-only for hospital administrators. Doctors create and update clinical records.</p>
+        <div class="mt-4 grid gap-3 md:grid-cols-2">
+          {% for report in hospital_reports %}
+            <article class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">
+              <div class="flex flex-wrap justify-between gap-2">
+                <strong>{{ report.patient.user.get_full_name|default:report.patient.user.username }}</strong>
+                <time class="text-slate-500">{{ report.date_issued|date:"M j, Y · g:i A" }}</time>
+              </div>
+              <p class="mt-2"><strong>Diagnosis:</strong> {{ report.get_decrypted_diagnosis|default:"—" }}</p>
+              <p class="mt-1"><strong>Treatment:</strong> {{ report.get_decrypted_treatment_plan|default:"—" }}</p>
+              {% if report.doctor %}<p class="mt-1"><strong>Clinician:</strong> Dr. {{ report.doctor.user.get_full_name }}</p>{% endif %}
+              {% if report.report_file %}<a class="mt-2 inline-block font-bold text-blue-700 underline" href="{% url 'medical-report-download' report.pk %}">Download lab result</a>{% endif %}
+            </article>
+          {% empty %}<p class="text-sm text-slate-500">No lab results or medical reports are linked to this hospital.</p>{% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    <section id="pharmacy-management" data-dashboard-panel="pharmacy" class="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div><h2 class="text-xl font-extrabold">Pharmacy operations</h2><p class="mt-1 text-sm text-slate-500">Global catalog and order management · {{ pharmacy_items_count }} products · {{ pharmacy_order_count }} orders · successful payments KSh {{ pharmacy_sales_total|floatformat:2 }}</p></div>
+        <a href="{% url 'pharmacy:pharmacy' %}" class="font-bold text-blue-700 underline">Open storefront</a>
+      </div>
+      <details class="rounded-lg border p-4">
+        <summary>Add pharmacy item</summary>
+        <form method="post" enctype="multipart/form-data" action="{% url 'hospital-dashboard-action' 'create_pharmacy_item' %}" class="mt-3 grid gap-3 sm:grid-cols-2">
+          {% csrf_token %}
+          {{ pharmacy_item_form.as_p }}
+          <button class="rounded-lg bg-blue-700 px-4 py-2 font-bold text-white sm:col-span-2">Add item</button>
+        </form>
+      </details>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr><th>Product</th><th>Price</th><th>Stock</th><th>Manage</th></tr></thead>
+          <tbody>
+            {% for row in pharmacy_item_rows %}
+              <tr>
+                <td colspan="4">
+                  <details>
+                    <summary class="flex flex-wrap justify-between gap-3">
+                      <span>{{ row.item.name }}{% if row.item.description %} · {{ row.item.description|truncatechars:80 }}{% endif %}</span>
+                      <span>KSh {{ row.item.price }} · {{ row.item.stock }} in stock</span>
+                    </summary>
+                    <div class="mt-3 grid gap-4 lg:grid-cols-[1fr_auto]">
+                      <form method="post" enctype="multipart/form-data" action="{% url 'hospital-dashboard-action' 'update_pharmacy_item' %}" class="grid gap-2 sm:grid-cols-2">
+                        {% csrf_token %}<input type="hidden" name="object_id" value="{{ row.item.pk }}">
+                        {{ row.form.as_p }}
+                        <button class="rounded-lg bg-blue-700 px-3 py-2 font-bold text-white sm:col-span-2">Save product</button>
+                      </form>
+                      <form method="post" action="{% url 'hospital-dashboard-action' 'delete_pharmacy_item' %}" onsubmit="return confirm('Delete this product? Products used in orders cannot be deleted.');">
+                        {% csrf_token %}<input type="hidden" name="object_id" value="{{ row.item.pk }}">
+                        <button class="rounded-lg bg-red-700 px-3 py-2 font-bold text-white">Delete product</button>
+                      </form>
+                    </div>
+                  </details>
+                </td>
+              </tr>
+            {% empty %}<tr><td colspan="4">No products in the catalog.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h3 class="font-bold">Recent orders and payments</h3>
+        <div class="mt-2 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Order status</th></tr></thead>
+            <tbody>
+              {% for row in pharmacy_order_rows %}
+                <tr>
+                  <td>#{{ row.order.pk }}<br><span class="text-xs text-slate-500">{{ row.order.ordered_at|date:"M j, Y" }}</span></td>
+                  <td>{{ row.order.user.get_full_name|default:row.order.user.username }}</td>
+                  <td>{% for line in row.order.orderitem_set.all %}{{ line.quantity }} × {{ line.pharmacy_item.name }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</td>
+                  <td>KSh {{ row.order.total_price }}</td>
+                  <td>{% if row.order.payment %}{{ row.order.payment.is_successful|yesno:"Paid,Failed" }} · {{ row.order.payment.amount }}{% else %}Not recorded{% endif %}</td>
+                  <td>
+                    <form method="post" action="{% url 'hospital-dashboard-action' 'update_pharmacy_order' %}" class="flex items-center gap-2">
+                      {% csrf_token %}<input type="hidden" name="object_id" value="{{ row.order.pk }}">
+                      {{ row.form.status }}
+                      <button class="rounded bg-slate-800 px-3 py-2 font-bold text-white">Save</button>
+                    </form>
+                  </td>
+                </tr>
+              {% empty %}<tr><td colspan="6">No orders have been placed.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    {% if is_superadmin %}
+      <section id="hospital-management" data-dashboard-panel="hospitals" class="rounded bg-white p-5 shadow-sm">
+        <h2 class="mb-3 text-lg font-semibold">Hospitals</h2>
+        <form method="get" class="mb-4 flex flex-wrap items-end gap-3">
+          <label>Manage hospital
+            <select name="hospital_id">
+              <option value="">All hospitals</option>
+              {% for item in hospitals %}
+                <option value="{{ item.pk }}" {% if selected_hospital.pk == item.pk %}selected{% endif %}>{{ item.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <button class="rounded bg-slate-800 px-4 py-2 text-white">Open</button>
+        </form>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead><tr><th>Name</th><th>Address</th><th>Contact</th><th>Records</th><th>Manage</th></tr></thead>
+            <tbody>
+              {% for item in hospitals %}
+                <tr>
+                  <td>{{ item.name }}</td><td>{{ item.address|linebreaksbr }}</td><td>{{ item.contact }}</td>
+                  <td>{{ item.doctorprofile_set.count }} doctors · {{ item.appointments.count }} appointments · {{ item.administrators.count }} admins</td>
+                  <td><a class="text-blue-700 underline" href="?hospital_id={{ item.pk }}">Manage</a></td>
+                </tr>
+              {% empty %}<tr><td colspan="5">No hospitals have been created.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if selected_hospital %}
+          <div class="mt-5 border-t pt-4">
+            <form method="post" action="{% url 'hospital-dashboard-action' 'delete_hospital' %}">
+              {% csrf_token %}<input type="hidden" name="hospital_id" value="{{ selected_hospital.pk }}">
+              <p class="mb-2 text-sm text-slate-600">Hospitals can only be deleted after all linked data is unassigned.</p>
+              <button class="rounded bg-red-700 px-4 py-2 text-white">Delete hospital</button>
+            </form>
+          </div>
+        {% endif %}
+      </section>
+
+      <section data-dashboard-panel="hospitals" class="grid gap-6 lg:grid-cols-2">
+        <form method="post" action="{% url 'hospital-dashboard-action' 'create_hospital' %}" class="rounded bg-white p-5 shadow-sm">
+          {% csrf_token %}<h2 class="mb-3 text-lg font-semibold">Create hospital</h2>
+          {{ hospital_form.as_p }}
+          <button class="mt-2 rounded bg-blue-700 px-4 py-2 text-white">Create hospital</button>
+        </form>
+        <form method="post" action="{% url 'hospital-dashboard-action' 'create_hospital_admin' %}" class="rounded bg-white p-5 shadow-sm">
+          {% csrf_token %}<h2 class="mb-3 text-lg font-semibold">Create hospital administrator</h2>
+          {{ hospital_admin_form.as_p }}
+          <button class="mt-2 rounded bg-blue-700 px-4 py-2 text-white">Create administrator</button>
+        </form>
+      </section>
+
+      <section data-dashboard-panel="hospitals" class="rounded bg-white p-5 shadow-sm">
+        <h2 class="mb-3 text-lg font-semibold">Hospital administrators</h2>
+        <div class="space-y-3">
+          {% for row in hospital_admin_rows %}
+            <details class="rounded border p-3">
+              <summary>{{ row.assignment.user.get_full_name|default:row.assignment.user.username }} — {{ row.assignment.hospital.name }} ({{ row.assignment.user.is_active|yesno:"active,inactive" }})</summary>
+              <form method="post" action="{% url 'hospital-dashboard-action' 'update_hospital_admin' %}" class="mt-3">
+                {% csrf_token %}<input type="hidden" name="object_id" value="{{ row.assignment.pk }}">
+                {{ row.form.as_p }}
+                <button class="mt-2 rounded bg-blue-700 px-4 py-2 text-white">Save administrator</button>
+              </form>
+            </details>
+          {% empty %}<p>No hospital administrator accounts.</p>{% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if selected_hospital %}
+      <section data-dashboard-panel="hospital-profile" class="rounded bg-white p-5 shadow-sm">
+        <h2 class="mb-3 text-lg font-semibold">Hospital profile</h2>
+        <form method="post" action="{% url 'hospital-dashboard-action' 'update_hospital' %}" class="grid gap-3 md:grid-cols-2">
+          {% csrf_token %}<input type="hidden" name="hospital_id" value="{{ selected_hospital.pk }}">
+          {{ hospital_update_form.as_p }}
+          <button class="rounded bg-blue-700 px-4 py-2 text-white md:col-span-2">Save hospital profile</button>
+        </form>
+      </section>
+      <section data-dashboard-panel="overview" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Doctors</p><p class="text-2xl font-bold">{{ doctors_count }}</p></div>
+        <div class="rounded bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Patients with active appointments</p><p class="text-2xl font-bold">{{ patients_count }}</p></div>
+        <div class="rounded bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Active appointments</p><p class="text-2xl font-bold">{{ appointments_count }}</p></div>
+        <div class="rounded bg-white p-4 shadow-sm"><p class="text-sm text-slate-500">Recorded payments</p><p class="text-2xl font-bold">{{ paid_total }}</p></div>
+      </section>
+
+      <section data-dashboard-panel="doctors" class="rounded bg-white p-5 shadow-sm">
+        <h2 class="mb-3 text-lg font-semibold">Doctors</h2>
+        <form method="post" action="{% url 'hospital-dashboard-action' 'assign_doctor' %}" class="mb-5 flex flex-wrap items-end gap-3">
+          {% csrf_token %}<input type="hidden" name="hospital_id" value="{{ selected_hospital.pk }}">
+          <label>Assign unassigned doctor {{ doctor_assignment_form.doctor }}</label>
+          <button class="rounded bg-blue-700 px-4 py-2 text-white">Assign doctor</button>
+        </form>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead><tr><th>Doctor</th><th>Specialization</th><th>Fee</th><th>Experience</th><th>Operations</th></tr></thead>
+            <tbody>
+              {% for row in doctor_rows %}
+                <tr>
+                  <td>{{ row.doctor.user.get_full_name }}<br><span class="text-sm text-slate-500">{{ row.doctor.user.email }}</span></td>
+                  <td>{{ row.doctor.specialization }}</td><td>{{ row.doctor.consultation_fee }}</td><td>{{ row.doctor.years_of_experience }} years</td>
+                  <td>
+                    <details><summary>Edit operational details</summary>
+                      <form method="post" action="{% url 'hospital-dashboard-action' 'update_doctor' %}" class="mt-2">
+                        {% csrf_token %}<input type="hidden" name="hospital_id" value="{{ selected_hospital.pk }}"><input type="hidden" name="object_id" value="{{ row.doctor.pk }}">
+                        {{ row.form.as_p }}<button class="mt-2 rounded bg-blue-700 px-3 py-1 text-white">Save</button>
+                      </form>
+                    </details>
+                    <form method="post" action="{% url 'hospital-dashboard-action' 'unassign_doctor' %}" class="mt-2">
+                      {% csrf_token %}<input type="hidden" name="hospital_id" value="{{ selected_hospital.pk }}"><input type="hidden" name="object_id" value="{{ row.doctor.pk }}">
+                      <button class="rounded bg-slate-700 px-3 py-1 text-white">Unassign</button>
+                    </form>
+                  </td>
+                </tr>
+              {% empty %}<tr><td colspan="5">No doctors are assigned to this hospital.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="hospital-appointments" data-dashboard-panel="hospital-appointments-panel" class="rounded bg-white p-5 shadow-sm">
+        <h2 class="mb-3 text-lg font-semibold">Appointments</h2>
+        <details class="mb-5 rounded border p-3">
+          <summary>Schedule appointment</summary>
+          <form method="post" action="{% url 'hospital-dashboard-action' 'create_appointment' %}" class="mt-3 grid gap-2 sm:grid-cols-2">
+            {% csrf_token %}<input type="hidden" name="hospital_id" value="{{ selected_hospital.pk }}">
+            {{ appointment_form.as_p }}
+            <button class="rounded bg-blue-700 px-4 py-2 text-white sm:col-span-2">Create appointment</button>
+          </form>
+        </details>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead><tr><th>Patient</th><th>Doctor</th><th>Date / time</th><th>Type / status</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for row in appointment_rows %}
+                <tr>
+                  <td>{{ row.appointment.patient.user.get_full_name }}<br><span class="text-sm text-slate-500">{{ row.appointment.patient.user.phone|default:"No phone listed" }}</span></td>
+                  <td>{{ row.appointment.doctor.user.get_full_name }}</td>
+                  <td>{{ row.appointment.date }} at {{ row.appointment.time }}</td>
+                  <td>{{ row.appointment.get_type_display }} · {{ row.appointment.get_status_display }}</td>
+                  <td>
+                    <details><summary>Edit appointment</summary>
+                      <form method="post" action="{% url 'hospital-dashboard-action' 'update_appointment' %}" class="mt-2">
+                        {% csrf_token %}<input type="hidden" name="hospital_id" value="{{ selected_hospital.pk }}"><input type="hidden" name="object_id" value="{{ row.appointment.pk }}">
+                        {{ row.form.as_p }}<button class="mt-2 rounded bg-blue-700 px-3 py-1 text-white">Save</button>
+                      </form>
+                    </details>
+                    <form method="post" action="{% url 'hospital-dashboard-action' 'cancel_appointment' %}" class="mt-2">
+                      {% csrf_token %}<input type="hidden" name="hospital_id" value="{{ selected_hospital.pk }}"><input type="hidden" name="object_id" value="{{ row.appointment.pk }}">
+                      <button class="rounded bg-red-700 px-3 py-1 text-white">Cancel</button>
+                    </form>
+                  </td>
+                </tr>
+              {% empty %}<tr><td colspan="5">No active appointments.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="hospital-billing" data-dashboard-panel="hospital-billing-panel" class="rounded bg-white p-5 shadow-sm">
+        <h2 class="mb-3 text-lg font-semibold">Billing</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead><tr><th>Patient</th><th>Doctor</th><th>Appointment</th><th>Fee</th><th>Payment</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for row in billing_rows %}
+                <tr>
+                  <td>{{ row.billing.appointment.patient.user.get_full_name }}</td>
+                  <td>{{ row.billing.appointment.doctor.user.get_full_name }}</td>
+                  <td>{{ row.billing.appointment.date }} at {{ row.billing.appointment.time }}</td>
+                  <td>{{ row.billing.total_fee }}</td>
+                  <td>{{ row.billing.get_payment_status_display }} · {{ row.billing.get_payment_method_display }}</td>
+                  <td><details><summary>Update billing</summary>
+                    <form method="post" action="{% url 'hospital-dashboard-action' 'update_billing' %}" class="mt-2">
+                      {% csrf_token %}<input type="hidden" name="hospital_id" value="{{ selected_hospital.pk }}"><input type="hidden" name="object_id" value="{{ row.billing.pk }}">
+                      {{ row.form.as_p }}<button class="mt-2 rounded bg-blue-700 px-3 py-1 text-white">Save billing</button>
+                    </form>
+                  </details></td>
+                </tr>
+              {% empty %}<tr><td colspan="6">No billing records.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% elif not is_superadmin %}
+      <section data-dashboard-panel="overview" class="rounded bg-white p-6 shadow-sm">This account is not assigned to a hospital.</section>
+    {% else %}
+      <section data-dashboard-panel="overview" class="rounded bg-white p-6 shadow-sm">
+        <h2 class="text-lg font-semibold">Select a hospital to manage its operations</h2>
+        <p class="mt-1 text-slate-600">Hospital records, clinicians, appointments, and billing are only shown after selecting a hospital.</p>
+      </section>
+    {% endif %}
+      </div>
+    </div>
+  </main>
+  <form id="notification-csrf" class="hidden">{% csrf_token %}</form>
   <script>
-    function loadContent(section) {
-      const contentDiv = document.getElementById('content');
-      contentDiv.innerHTML = ''; // Clear existing content
+    const dashboardWorkspace = document.getElementById("dashboard-workspace");
+    const dashboardPanels = dashboardWorkspace.querySelectorAll("[data-dashboard-panel]");
+    const dashboardNavItems = document.querySelectorAll("[data-dashboard-target]");
+    const dashboardPanelTitle = document.getElementById("dashboard-panel-title");
 
-      switch (section) {
-       case 'patients':
-  contentDiv.innerHTML = `
-    <h3 class="text-xl font-bold mb-4">Patients</h3>
-    <h1>List of patients available.</h1>
-    <hr>
-    <table class="w-full table-auto">
-      <thead>
-        <tr class="border-b">
-          <th class="py-2 px-4">Select</th>
-          <th class="py-2 px-4">Name</th>
-          <th class="py-2 px-4">Age</th>
-          <th class="py-2 px-4">Gender</th>
-          <th class="py-2 px-4">Contact</th>
-          <th class="py-2 px-4">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="border-b hover:bg-gray-100">
-          <td class="py-2 px-4">
-            <input type="checkbox" class="select-patient" data-id="1">
-          </td>
-          <td class="py-2 px-4">Eugene Sifuna</td>
-          <td class="py-2 px-4">21</td>
-          <td class="py-2 px-4">Male</td>
-          <td class="py-2 px-4">+254701234567</td>
-          <td class="py-2 px-4">
-            <div class="flex space-x-2">
-              <button class="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600 transition-all" onclick="viewPatient(1)">View Details</button>
-              <button class="bg-green-500 text-white py-1 px-4 rounded hover:bg-green-600 transition-all" onclick="sendMessage(1)">Send Message</button>
-              <button class="bg-red-500 text-white py-1 px-4 rounded hover:bg-red-600 transition-all" onclick="deletePatient(1)">Delete</button>
-            </div>
-          </td>
-        </tr>
-        <tr class="border-b hover:bg-gray-100">
-          <td class="py-2 px-4">
-            <input type="checkbox" class="select-patient" data-id="2">
-          </td>
-          <td class="py-2 px-4">Judy Muraya</td>
-          <td class="py-2 px-4">34</td>
-          <td class="py-2 px-4">Female</td>
-          <td class="py-2 px-4">+987654321</td>
-          <td class="py-2 px-4">
-            <div class="flex space-x-2">
-              <button class="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600 transition-all" onclick="viewPatient(2)">View Details</button>
-              <button class="bg-green-500 text-white py-1 px-4 rounded hover:bg-green-600 transition-all" onclick="sendMessage(2)">Send Message</button>
-              <button class="bg-red-500 text-white py-1 px-4 rounded hover:bg-red-600 transition-all" onclick="deletePatient(2)">Delete</button>
-            </div>
-          </td>
-        </tr>
-        <tr class="border-b hover:bg-gray-100">
-          <td class="py-2 px-4">
-            <input type="checkbox" class="select-patient" data-id="3">
-          </td>
-          <td class="py-2 px-4">Linda Wambui</td>
-          <td class="py-2 px-4">28</td>
-          <td class="py-2 px-4">Female</td>
-          <td class="py-2 px-4">+254712345678</td>
-          <td class="py-2 px-4">
-            <div class="flex space-x-2">
-              <button class="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600 transition-all" onclick="viewPatient(3)">View Details</button>
-              <button class="bg-green-500 text-white py-1 px-4 rounded hover:bg-green-600 transition-all" onclick="sendMessage(3)">Send Message</button>
-              <button class="bg-red-500 text-white py-1 px-4 rounded hover:bg-red-600 transition-all" onclick="deletePatient(3)">Delete</button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    function activateDashboardPanel(panelKey, targetId = null, updateLocation = true) {
+      const activePanels = [...dashboardPanels].filter(
+        panel => panel.dataset.dashboardPanel === panelKey
+      );
+      if (!activePanels.length) return false;
 
-    <div class="mt-6">
-      <h4 class="font-bold">Chat</h4>
-      <textarea id="messageInput" rows="4" placeholder="Enter your message..." class="w-full mt-2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"></textarea>
-      <button id="sendMessageBtn" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all" disabled>Send</button>
-    </div>
-
-    <div class="mt-6">
-      <button id="sendToSelected" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-all" disabled>Send to Selected Patients</button>
-    </div>
-  `;
-  break;
-
-
-
-        case 'doctors':
-          contentDiv.innerHTML = `
-             <div class="p-5">
-  <h3 class="text-2xl font-bold mb-4">Doctors</h3>
-  <h1 class="text-lg mb-4">List of doctors available</h1>
-  <hr class="mb-6">
-  
-  <!-- Search Bar -->
-  <div class="mb-4">
-    <input type="text" id="searchDoctor" class="px-4 py-2 border border-gray-300 rounded-lg w-1/3" placeholder="Search Doctors by Name..." oninput="filterDoctors()">
-  </div>
-
-  <!-- Doctors Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div class="doctor-card p-5 border border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-      <div class="text-center">
-        <img src="https://via.placeholder.com/150" alt="doctor" class="rounded-full mx-auto mb-4">
-        <h4 class="text-xl font-semibold mb-2">Sarah Atieno</h4>
-        <p class="text-gray-600">Radiologist</p>
-        <p class="text-gray-400">+254 700 123456</p>
-      </div>
-      <div class="mt-4 flex justify-between">
-        <button onclick="editDoctor('Sarah Atieno')" class="text-blue-500 hover:text-blue-700">Edit</button>
-        <button onclick="deleteDoctor('Sarah Atieno')" class="text-red-500 hover:text-red-700">Delete</button>
-      </div>
-    </div>
-
-    <div class="doctor-card p-5 border border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-      <div class="text-center">
-        <img src="https://via.placeholder.com/150" alt="doctor" class="rounded-full mx-auto mb-4">
-        <h4 class="text-xl font-semibold mb-2">Cynthia Jane</h4>
-        <p class="text-gray-600">Surgeon</p>
-        <p class="text-gray-400">+254 700 123456</p>
-      </div>
-      <div class="mt-4 flex justify-between">
-        <button onclick="editDoctor('Cynthia Jane')" class="text-blue-500 hover:text-blue-700">Edit</button>
-        <button onclick="deleteDoctor('Cynthia Jane')" class="text-red-500 hover:text-red-700">Delete</button>
-      </div>
-    </div>
-
-    <div class="doctor-card p-5 border border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-      <div class="text-center">
-        <img src="https://via.placeholder.com/150" alt="doctor" class="rounded-full mx-auto mb-4">
-        <h4 class="text-xl font-semibold mb-2">Emily Asiko</h4>
-        <p class="text-gray-600">Radiologist</p>
-        <p class="text-gray-400">+254 700 123456</p>
-      </div>
-      <div class="mt-4 flex justify-between">
-        <button onclick="editDoctor('Emily Asiko')" class="text-blue-500 hover:text-blue-700">Edit</button>
-        <button onclick="deleteDoctor('Emily Asiko')" class="text-red-500 hover:text-red-700">Delete</button>
-      </div>
-    </div>
-
-    <div class="doctor-card p-5 border border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-      <div class="text-center">
-        <img src="https://via.placeholder.com/150" alt="doctor" class="rounded-full mx-auto mb-4">
-        <h4 class="text-xl font-semibold mb-2">Eyleen Sang</h4>
-        <p class="text-gray-600">Radiologist</p>
-        <p class="text-gray-400">+254 700 123456</p>
-      </div>
-      <div class="mt-4 flex justify-between">
-        <button onclick="editDoctor('Eyleen Sang')" class="text-blue-500 hover:text-blue-700">Edit</button>
-        <button onclick="deleteDoctor('Eyleen Sang')" class="text-red-500 hover:text-red-700">Delete</button>
-      </div>
-    </div>
-
-    <div class="doctor-card p-5 border border-gray-200 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-      <div class="text-center">
-        <img src="https://via.placeholder.com/150" alt="doctor" class="rounded-full mx-auto mb-4">
-        <h4 class="text-xl font-semibold mb-2">Trevor Totona</h4>
-        <p class="text-gray-600">Radiologist</p>
-        <p class="text-gray-400">+254 700 123456</p>
-      </div>
-      <div class="mt-4 flex justify-between">
-        <button onclick="editDoctor('Trevor Totona')" class="text-blue-500 hover:text-blue-700">Edit</button>
-        <button onclick="deleteDoctor('Trevor Totona')" class="text-red-500 hover:text-red-700">Delete</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal for Confirming Delete -->
-<div id="deleteModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden">
-  <div class="flex items-center justify-center h-full">
-    <div class="bg-white p-8 rounded-lg w-1/3">
-      <h2 class="text-xl font-bold mb-4">Are you sure you want to delete this doctor?</h2>
-      <div class="flex justify-between">
-        <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 rounded-lg">Cancel</button>
-        <button onclick="confirmDelete()" class="px-4 py-2 bg-red-500 text-white rounded-lg">Delete</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-          `;
-          break;
-// Appointments Section
-case 'appointments':
-  contentDiv.innerHTML = `
-    <h3 class="text-xl font-bold mb-4">Appointments</h3>
-    <p>Details of upcoming appointments.</p>
-    <button id="addAppointmentBtn" class="bg-blue-500 text-white py-2 px-4 rounded mt-4">Add Appointment</button>
-
-    <table id="appointmentTable" class="min-w-full mt-4">
-      <thead>
-        <tr class="border-b">
-          <th class="px-4 py-2">Patient Name</th>
-          <th class="px-4 py-2">Doctor Name</th>
-          <th class="px-4 py-2">Date</th>
-          <th class="px-4 py-2">Time</th>
-          <th class="px-4 py-2">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="appointmentList">
-        <!-- Appointment list will be dynamically populated here -->
-      </tbody>
-    </table>
-
-    <div id="addAppointmentForm" class="hidden mt-4">
-      <h3 class="text-xl font-bold mb-4">Add New Appointment</h3>
-      <form id="appointmentForm">
-        <div class="mb-4">
-          <label class="block">Patient Name</label>
-          <input type="text" id="patientName" class="p-2 border rounded w-full" placeholder="Enter patient name" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Doctor Name</label>
-          <input type="text" id="doctorName" class="p-2 border rounded w-full" placeholder="Enter doctor name" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Date</label>
-          <input type="date" id="appointmentDate" class="p-2 border rounded w-full" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Time</label>
-          <input type="time" id="appointmentTime" class="p-2 border rounded w-full" required>
-        </div>
-        <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded">Add Appointment</button>
-      </form>
-    </div>
-  `;
-
-  document.getElementById('addAppointmentBtn').addEventListener('click', function() {
-    document.getElementById('addAppointmentForm').classList.remove('hidden');
-  });
-
-  document.getElementById('appointmentForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    const patientName = document.getElementById('patientName').value;
-    const doctorName = document.getElementById('doctorName').value;
-    const appointmentDate = document.getElementById('appointmentDate').value;
-    const appointmentTime = document.getElementById('appointmentTime').value;
-
-    addAppointment({ patientName, doctorName, date: appointmentDate, time: appointmentTime });
-
-    document.getElementById('appointmentForm').reset();
-    document.getElementById('addAppointmentForm').classList.add('hidden');
-  });
-
-  function addAppointment(appointment) {
-    const appointmentList = document.getElementById('appointmentList');
-
-    const row = document.createElement('tr');
-    row.classList.add('border-b');
-    row.innerHTML = `
-      <td class="px-4 py-2">${appointment.patientName}</td>
-      <td class="px-4 py-2">${appointment.doctorName}</td>
-      <td class="px-4 py-2">${appointment.date}</td>
-      <td class="px-4 py-2">${appointment.time}</td>
-      <td class="px-4 py-2">
-        <button class="bg-yellow-500 text-white py-1 px-2 rounded editAppointmentBtn" data-id="${appointment.patientName}">Edit</button>
-      </td>
-    `;
-    appointmentList.appendChild(row);
-
-    const editBtns = document.querySelectorAll('.editAppointmentBtn');
-    editBtns.forEach((btn) => {
-      btn.addEventListener('click', function() {
-        const patientName = btn.dataset.id;
-        showEditAppointmentForm(patientName);
+      dashboardPanels.forEach(panel => {
+        if (panel.dataset.dashboardPanel === panelKey) {
+          panel.setAttribute("data-active-panel", "");
+        } else {
+          panel.removeAttribute("data-active-panel");
+        }
       });
-    });
-  }
 
-  function showEditAppointmentForm(patientName) {
-    contentDiv.innerHTML = `
-      <h3 class="text-xl font-bold mb-4">Edit Appointment</h3>
-      <form id="editAppointmentForm">
-        <div class="mb-4">
-          <label class="block">Patient Name</label>
-          <input type="text" id="editPatientName" class="p-2 border rounded w-full" value="${patientName}" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Doctor Name</label>
-          <input type="text" id="editDoctorName" class="p-2 border rounded w-full" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Date</label>
-          <input type="date" id="editAppointmentDate" class="p-2 border rounded w-full" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Time</label>
-          <input type="time" id="editAppointmentTime" class="p-2 border rounded w-full" required>
-        </div>
-        <button type="submit" class="bg-yellow-500 text-white py-2 px-4 rounded">Save Changes</button>
-      </form>
-    `;
-
-    document.getElementById('editAppointmentForm').addEventListener('submit', function(event) {
-      event.preventDefault();
-
-      const newPatientName = document.getElementById('editPatientName').value;
-      const newDoctorName = document.getElementById('editDoctorName').value;
-      const newDate = document.getElementById('editAppointmentDate').value;
-      const newTime = document.getElementById('editAppointmentTime').value;
-
-      console.log('Updating appointment:', { newPatientName, newDoctorName, newDate, newTime });
-
-      contentDiv.innerHTML = `
-        <h3 class="text-xl font-bold mb-4">Appointments</h3>
-        <p>Details of upcoming appointments.</p>
-        <button id="addAppointmentBtn" class="bg-blue-500 text-white py-2 px-4 rounded mt-4">Add Appointment</button>
-        <table id="appointmentTable" class="min-w-full mt-4">
-          <thead>
-            <tr class="border-b">
-              <th class="px-4 py-2">Patient Name</th>
-              <th class="px-4 py-2">Doctor Name</th>
-              <th class="px-4 py-2">Date</th>
-              <th class="px-4 py-2">Time</th>
-              <th class="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="appointmentList"></tbody>
-        </table>
-      `;
-    });
-  }
-  break;
-
-// Medicines Section
-case 'medicines':
-  contentDiv.innerHTML = `
-    <h3 class="text-xl font-bold mb-4">Medicines</h3>
-    <p>List of medicines available in the hospital.</p>
-    <button id="addMedicineBtn" class="bg-blue-500 text-white py-2 px-4 rounded mt-4">Add Medicine</button>
-
-    <table id="medicineTable" class="min-w-full mt-4">
-      <thead>
-        <tr class="border-b">
-          <th class="px-4 py-2">Medicine Name</th>
-          <th class="px-4 py-2">Quantity</th>
-          <th class="px-4 py-2">Price</th>
-          <th class="px-4 py-2">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="medicineList">
-        <!-- Medicine list will be dynamically populated here -->
-      </tbody>
-    </table>
-
-    <div id="addMedicineForm" class="hidden mt-4">
-      <h3 class="text-xl font-bold mb-4">Add New Medicine</h3>
-      <form id="medicineForm">
-        <div class="mb-4">
-          <label class="block">Medicine Name</label>
-          <input type="text" id="medicineName" class="p-2 border rounded w-full" placeholder="Enter medicine name" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Quantity</label>
-          <input type="number" id="medicineQuantity" class="p-2 border rounded w-full" placeholder="Enter quantity" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Price</label>
-          <input type="number" id="medicinePrice" class="p-2 border rounded w-full" placeholder="Enter price" required>
-        </div>
-        <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded">Add Medicine</button>
-      </form>
-    </div>
-  `;
-
-  document.getElementById('addMedicineBtn').addEventListener('click', function() {
-    document.getElementById('addMedicineForm').classList.remove('hidden');
-  });
-
-  document.getElementById('medicineForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    const medicineName = document.getElementById('medicineName').value;
-    const quantity = document.getElementById('medicineQuantity').value;
-    const price = document.getElementById('medicinePrice').value;
-
-    addMedicine({ medicineName, quantity, price });
-
-    document.getElementById('medicineForm').reset();
-    document.getElementById('addMedicineForm').classList.add('hidden');
-  });
-
-  function addMedicine(medicine) {
-    const medicineList = document.getElementById('medicineList');
-
-    const row = document.createElement('tr');
-    row.classList.add('border-b');
-    row.innerHTML = `
-      <td class="px-4 py-2">${medicine.medicineName}</td>
-      <td class="px-4 py-2">${medicine.quantity}</td>
-      <td class="px-4 py-2">${medicine.price}</td>
-      <td class="px-4 py-2">
-        <button class="bg-yellow-500 text-white py-1 px-2 rounded editMedicineBtn" data-id="${medicine.medicineName}">Edit</button>
-      </td>
-    `;
-    medicineList.appendChild(row);
-
-    const editBtns = document.querySelectorAll('.editMedicineBtn');
-    editBtns.forEach((btn) => {
-      btn.addEventListener('click', function() {
-        const medicineName = btn.dataset.id;
-        showEditMedicineForm(medicineName);
+      const activeItem = [...dashboardNavItems].find(
+        item => item.dataset.dashboardTarget === panelKey
+      );
+      dashboardNavItems.forEach(item => {
+        if (item === activeItem) {
+          item.setAttribute("aria-current", "page");
+        } else {
+          item.removeAttribute("aria-current");
+        }
       });
-    });
-  }
+      if (activeItem) dashboardPanelTitle.textContent = activeItem.dataset.dashboardLabel;
 
-  function showEditMedicineForm(medicineName) {
-    contentDiv.innerHTML = `
-      <h3 class="text-xl font-bold mb-4">Edit Medicine</h3>
-      <form id="editMedicineForm">
-        <div class="mb-4">
-          <label class="block">Medicine Name</label>
-          <input type="text" id="editMedicineName" class="p-2 border rounded w-full" value="${medicineName}" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Quantity</label>
-          <input type="number" id="editMedicineQuantity" class="p-2 border rounded w-full" required>
-        </div>
-        <div class="mb-4">
-          <label class="block">Price</label>
-          <input type="number" id="editMedicinePrice" class="p-2 border rounded w-full" required>
-        </div>
-        <button type="submit" class="bg-yellow-500 text-white py-2 px-4 rounded">Save Changes</button>
-      </form>
-    `;
-
-    document.getElementById('editMedicineForm').addEventListener('submit', function(event) {
-      event.preventDefault();
-
-      const newMedicineName = document.getElementById('editMedicineName').value;
-      const newQuantity = document.getElementById('editMedicineQuantity').value;
-      const newPrice = document.getElementById('editMedicinePrice').value;
-
-      console.log('Updating medicine:', { newMedicineName, newQuantity, newPrice });
-
-      contentDiv.innerHTML = `
-        <h3 class="text-xl font-bold mb-4">Medicines</h3>
-        <p>List of medicines available in the hospital.</p>
-        <button id="addMedicineBtn" class="bg-blue-500 text-white py-2 px-4 rounded mt-4">Add Medicine</button>
-        <table id="medicineTable" class="min-w-full mt-4">
-          <thead>
-            <tr class="border-b">
-              <th class="px-4 py-2">Medicine Name</th>
-              <th class="px-4 py-2">Quantity</th>
-              <th class="px-4 py-2">Price</th>
-              <th class="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="medicineList"></tbody>
-        </table>
-      `;
-    });
-  }
-  break;
-
-
-
-        default:
-          contentDiv.innerHTML = `
-            <h3 class="text-xl font-bold">Dashboard Overview</h3>
-            <p>This is the dashboard where you can view the overview of the hospital data.</p>
-            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="bg-white p-4 rounded-lg shadow">
-                <h4 class="font-bold mb-4">Patient Admissions</h4>
-                <canvas id="patientChart"></canvas>
-              </div>
-              <div class="bg-white p-4 rounded-lg shadow">
-                <h4 class="font-bold mb-4">Doctor Appointments</h4>
-                <canvas id="appointmentChart"></canvas>
-              </div>
-              <div class="bg-white p-4 rounded-lg shadow">
-                <h4 class="font-bold mb-4">Medicine Stock</h4>
-                <canvas id="medicineChart"></canvas>
-              </div>
-              <div class="bg-white p-4 rounded-lg shadow">
-                <h4 class="font-bold mb-4">Patient Gender Distribution</h4>
-                <canvas id="genderChart"></canvas>
-              </div>
-            </div>
-          `;
+      dashboardWorkspace.scrollTop = 0;
+      if (updateLocation) {
+        window.history.replaceState(
+          null,
+          "",
+          `${window.location.pathname}${window.location.search}#dashboard-${panelKey}`
+        );
       }
-      loadCharts();
-    }
-
-    function loadCharts() {
-      const patientCtx = document.getElementById('patientChart').getContext('2d');
-      const patientChart = new Chart(patientCtx, {
-        type: 'bar',
-        data: {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-          datasets: [{
-            label: 'Patients',
-            data: [50, 70, 90, 100, 130],
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-
-      const appointmentCtx = document.getElementById('appointmentChart').getContext('2d');
-      const appointmentChart = new Chart(appointmentCtx, {
-        type: 'line',
-        data: {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-          datasets: [{
-            label: 'Appointments',
-            data: [30, 40, 60, 80, 100],
-            backgroundColor: 'rgba(153, 102, 255, 0.2)',
-            borderColor: 'rgba(153, 102, 255, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-
-      const medicineCtx = document.getElementById('medicineChart').getContext('2d');
-      const medicineChart = new Chart(medicineCtx, {
-        type: 'bar',
-        data: {
-          labels: ['Paracetamol', 'Amoxicillin', 'Ibuprofen', 'Aspirin', 'Vitamin C'],
-          datasets: [{
-            label: 'Stock',
-            data: [200, 150, 100, 50, 300],
-            backgroundColor: 'rgba(255, 159, 64, 0.2)',
-            borderColor: 'rgba(255, 159, 64, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-
-      const genderCtx = document.getElementById('genderChart').getContext('2d');
-      const genderChart = new Chart(genderCtx, {
-        type: 'pie',
-        data: {
-          labels: ['Male', 'Female'],
-          datasets: [{
-            label: 'Gender Distribution',
-            data: [60, 40],
-            backgroundColor: ['rgba(54, 162, 235, 0.2)', 'rgba(255, 99, 132, 0.2)'],
-            borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: true,
-              text: 'Patient Gender Distribution'
-            }
-          }
-        }
-      });
-    }
-
-    function toggleSidebar() {
-      const sidebar = document.querySelector('.sidebar');
-      sidebar.classList.toggle('open');
-    }
-
-    // Load the dashboard content by default
-    loadContent('dashboard');
-
-  // Search functionality
-  function filterDoctors() {
-    const searchTerm = document.getElementById("searchDoctor").value.toLowerCase();
-    const doctorCards = document.querySelectorAll('.doctor-card');
-    doctorCards.forEach(card => {
-      const doctorName = card.querySelector('h4').innerText.toLowerCase();
-      if (doctorName.includes(searchTerm)) {
-        card.style.display = 'block';
-      } else {
-        card.style.display = 'none';
+      if (targetId) {
+        window.requestAnimationFrame(() => {
+          document.getElementById(targetId)?.scrollIntoView({ block: "start" });
+        });
       }
+      return true;
+    }
+
+    dashboardNavItems.forEach(item => {
+      item.addEventListener("click", () => {
+        activateDashboardPanel(item.dataset.dashboardTarget);
+      });
     });
-  }
 
-  // Edit doctor function
-  function editDoctor(name) {
-    alert(`Editing Doctor: ${name}`);
-  }
+    dashboardWorkspace.addEventListener("click", event => {
+      const link = event.target.closest('a[href^="#"]');
+      if (!link) return;
+      const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+      const panel = target?.closest("[data-dashboard-panel]");
+      if (!panel) return;
+      event.preventDefault();
+      activateDashboardPanel(panel.dataset.dashboardPanel, target.id);
+    });
 
-  // Delete doctor function
-  function deleteDoctor(name) {
-    document.getElementById("deleteModal").classList.remove('hidden');
-  }
-
-  // Close the delete modal
-  function closeDeleteModal() {
-    document.getElementById("deleteModal").classList.add('hidden');
-  }
-
-  // Confirm deletion
-  function confirmDelete() {
-    alert('Doctor has been deleted.');
-    closeDeleteModal();
-  };
-  function viewPatient(id) {
-  console.log('View details for patient with ID:', id);
-  // You can expand this function to display more detailed information for the patient.
-}
-
-function sendMessage(id) {
-  const message = document.getElementById('messageInput').value;
-  console.log(`Sending message to patient ${id}: ${message}`);
-  // Send the message to the patient (you can handle it by making an API call).
-}
-
-function deletePatient(id) {
-  console.log('Deleting patient with ID:', id);
-  // Delete patient logic here (could involve an API call to remove the patient from the list).
-}
-
-function enableSendButton() {
-  const message = document.getElementById('messageInput').value;
-  const sendButton = document.getElementById('sendMessageBtn');
-  sendButton.disabled = !message.trim();
-}
-
-function enableBulkSendButton() {
-  const selectedCheckboxes = document.querySelectorAll('.select-patient:checked');
-  const bulkSendButton = document.getElementById('sendToSelected');
-  bulkSendButton.disabled = selectedCheckboxes.length === 0;
-}
-
-document.querySelectorAll('.select-patient').forEach(checkbox => {
-  checkbox.addEventListener('change', enableBulkSendButton);
-});
-
-document.getElementById('messageInput').addEventListener('input', enableSendButton);
-
-
+    document.body.classList.add("dashboard-enhanced");
+    const hash = window.location.hash.slice(1);
+    const hashPanel = hash.startsWith("dashboard-") ? hash.slice("dashboard-".length) : null;
+    const hashTarget = hashPanel ? null : document.getElementById(decodeURIComponent(hash));
+    const hashTargetPanel = hashTarget?.closest("[data-dashboard-panel]");
+    activateDashboardPanel(
+      hashPanel || hashTargetPanel?.dataset.dashboardPanel || "overview",
+      hashTarget?.id || null,
+      Boolean(hashPanel || hashTargetPanel)
+    );
+  </script>
+  <script>
+    const notificationCsrfToken = document.querySelector("#notification-csrf [name=csrfmiddlewaretoken]").value;
+    document.querySelectorAll("[data-mark-notification-read]").forEach(button => {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const response = await fetch(`/api/notifications/${button.dataset.markNotificationRead}/read/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": notificationCsrfToken },
+          });
+          if (!response.ok) throw new Error("Could not update notification.");
+          const row = button.closest("[data-notification-row]");
+          row.querySelector("p").classList.remove("font-bold", "text-slate-900");
+          row.querySelector("p").classList.add("text-slate-600");
+          button.remove();
+          const count = document.getElementById("unread-notifications-count");
+          const unread = Math.max(0, Number.parseInt(count.textContent, 10) - 1);
+          count.textContent = `${unread} unread`;
+        } catch {
+          button.disabled = false;
+          const error = document.getElementById("notification-error");
+          error.textContent = "Could not mark this notification as read. Please retry.";
+          error.classList.remove("hidden");
+        }
+      });
+    });
   </script>
 </body>
-
 </html>

@@ -5,7 +5,22 @@ from django.utils import timezone
 
 # =================== Custom User Manager ===================
 class CustomUserManager(BaseUserManager):
+    def _normalize_phone(self, value):
+        if value is None:
+            return None
+        value = str(value).strip()
+        return value or None
+
     def create_user(self, username, password=None, **extra_fields):
+        if not username:
+            raise ValueError("The username field must be set.")
+
+        extra_fields.setdefault("role", "patient")
+        extra_fields["phone"] = self._normalize_phone(extra_fields.get("phone"))
+
+        if password is None:
+            raise ValueError("The password field must be set.")
+
         user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -14,6 +29,13 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, username, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("role", "admin")
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
         return self.create_user(username, password, **extra_fields)
 
 # =================== Custom User Model ===================
@@ -37,6 +59,15 @@ class User(AbstractUser):
     profile_picture = models.ImageField(upload_to="profile_pictures/", blank=True, null=True)
 
     objects = CustomUserManager()
+
+    def save(self, *args, **kwargs):
+        if self.phone is not None:
+            self.phone = str(self.phone).strip() or None
+
+        if not self.role:
+            self.role = 'admin' if self.is_superuser else 'patient'
+
+        super().save(*args, **kwargs)
 
     def is_doctor(self):
         return self.role == 'doctor'
@@ -107,7 +138,8 @@ class User(AbstractUser):
         return []
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        full_name = f"{self.first_name} {self.last_name}".strip()
+        return full_name or self.username
 
 # =================== Weekday Model ===================
 class Weekday(models.Model):
